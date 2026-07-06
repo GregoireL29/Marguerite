@@ -119,14 +119,15 @@ interface Bucket {
 }
 
 // Chaque jour ouvert peut avoir plusieurs créneaux d'ouverture (coupure
-// méridienne). Pour chacun, on découpe en tranches d'une heure et on
-// applique effectif_min_ouverture sur la première moitié du créneau,
-// effectif_min_fermeture sur la seconde — faute d'un seuil par tranche
-// horaire dans le modèle de données actuel.
+// méridienne). Pour chacun, on découpe en tranches d'une heure :
+// effectif_min_ouverture s'applique sur la première heure, effectif_min_fermeture
+// sur la dernière, et effectif_min_journee sur tout le reste. Si le créneau
+// ne fait qu'une heure, on retient le plus exigeant des deux seuils bord à bord.
 function computeBuckets(
   openBlocks: HoraireCreneau[],
   dayCreneaux: CreneauRow[],
   effOuverture: number,
+  effJournee: number,
   effFermeture: number
 ): Bucket[] {
   const buckets: Bucket[] = [];
@@ -134,19 +135,32 @@ function computeBuckets(
   for (const block of openBlocks) {
     const start = timeToMinutes(block.debut);
     const end = timeToMinutes(block.fin);
-    const mid = (start + end) / 2;
 
+    const slots: { start: number; end: number }[] = [];
     for (let t = start; t < end; t += 60) {
-      const bucketEnd = Math.min(t + 60, end);
-      const bucketMid = (t + bucketEnd) / 2;
-      const required = bucketMid < mid ? effOuverture : effFermeture;
+      slots.push({ start: t, end: Math.min(t + 60, end) });
+    }
+
+    slots.forEach((slot, index) => {
+      let required: number;
+      if (slots.length === 1) {
+        required = Math.max(effOuverture, effFermeture);
+      } else if (index === 0) {
+        required = effOuverture;
+      } else if (index === slots.length - 1) {
+        required = effFermeture;
+      } else {
+        required = effJournee;
+      }
+
       const actual = dayCreneaux.filter(
         (c) =>
-          timeToMinutes(c.heure_debut) <= t &&
-          timeToMinutes(c.heure_fin) >= bucketEnd
+          timeToMinutes(c.heure_debut) <= slot.start &&
+          timeToMinutes(c.heure_fin) >= slot.end
       ).length;
-      buckets.push({ start: t, end: bucketEnd, required, actual });
-    }
+
+      buckets.push({ start: slot.start, end: slot.end, required, actual });
+    });
   }
 
   return buckets;
@@ -157,6 +171,7 @@ export default function Home() {
   const [horaires, setHoraires] = useState<Horaires>(EMPTY_HORAIRES);
   const [effectifOuverture, setEffectifOuverture] = useState(1);
   const [effectifFermeture, setEffectifFermeture] = useState(1);
+  const [effectifJournee, setEffectifJournee] = useState(1);
   const [salaries, setSalaries] = useState<Salarie[]>([]);
   const [planningId, setPlanningId] = useState<string | null>(null);
   const [creneaux, setCreneaux] = useState<CreneauRow[]>([]);
@@ -193,7 +208,9 @@ export default function Home() {
       await Promise.all([
         supabase
           .from("boutiques")
-          .select("horaires, effectif_min_ouverture, effectif_min_fermeture")
+          .select(
+            "horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee"
+          )
           .eq("id", currentUser.boutique_id)
           .single(),
         supabase
@@ -217,6 +234,7 @@ export default function Home() {
     setHoraires({ ...EMPTY_HORAIRES, ...(boutique.horaires ?? {}) });
     setEffectifOuverture(boutique.effectif_min_ouverture);
     setEffectifFermeture(boutique.effectif_min_fermeture);
+    setEffectifJournee(boutique.effectif_min_journee);
     setSalaries(salariesData ?? []);
 
     const semaineDebut = toISODate(week);
@@ -402,6 +420,7 @@ export default function Home() {
                 openBlocks,
                 dayCreneaux,
                 effectifOuverture,
+                effectifJournee,
                 effectifFermeture
               );
               const hasGap = buckets.some((b) => b.actual < b.required);
