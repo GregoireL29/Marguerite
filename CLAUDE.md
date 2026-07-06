@@ -1,3 +1,5 @@
+@AGENTS.md
+
 # Marguerite — Contexte projet
 
 ## Ce qu'est le projet
