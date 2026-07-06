@@ -67,3 +67,33 @@ create index idx_creneaux_planning on creneaux(planning_id);
 create index idx_creneaux_utilisateur on creneaux(utilisateur_id);
 create index idx_utilisateurs_structure on utilisateurs(structure_id);
 create index idx_boutiques_structure on boutiques(structure_id);
+
+-- Row Level Security
+-- V1 : une seule structure, pas encore de distinction de droits par rôle.
+-- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
+-- les tables du module Planning. À affiner quand les rôles (vendeur,
+-- manager, gérant) et le multi-structure seront réellement utilisés.
+alter table structures enable row level security;
+alter table boutiques enable row level security;
+alter table utilisateurs enable row level security;
+alter table profils_salarie enable row level security;
+alter table plannings enable row level security;
+alter table creneaux enable row level security;
+
+create policy "authenticated_full_access" on structures
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on boutiques
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on utilisateurs
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on profils_salarie
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on plannings
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on creneaux
+  for all to authenticated using (true) with check (true);
