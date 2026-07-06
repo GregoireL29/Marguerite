@@ -7,14 +7,18 @@ create table structures (
   created_at timestamptz not null default now()
 );
 
+-- horaires : objet jsonb avec une clé par jour ("lun".."dim"), chacune
+-- contenant une liste de créneaux { "debut": "HH:MM", "fin": "HH:MM" }.
+-- Liste vide = fermé ce jour-là. Plusieurs créneaux = fermeture le midi.
+-- Exemple : {"lun": [{"debut":"09:00","fin":"12:30"},{"debut":"14:00","fin":"19:00"}], "dim": []}
 create table boutiques (
   id uuid primary key default uuid_generate_v4(),
   structure_id uuid not null references structures(id) on delete cascade,
   nom text not null,
   adresse text,
-  jours_ouverture jsonb not null default '["lun","mar","mer","jeu","ven","sam"]',
-  heure_ouverture time not null default '09:00',
-  heure_fermeture time not null default '19:00',
+  horaires jsonb not null default '{"lun":[],"mar":[],"mer":[],"jeu":[],"ven":[],"sam":[],"dim":[]}',
+  effectif_min_ouverture integer not null default 1,
+  effectif_min_fermeture integer not null default 1,
   created_at timestamptz not null default now()
 );
 
