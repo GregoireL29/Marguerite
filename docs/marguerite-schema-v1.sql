@@ -17,8 +17,12 @@ create table boutiques (
   nom text not null,
   adresse text,
   horaires jsonb not null default '{"lun":[],"mar":[],"mer":[],"jeu":[],"ven":[],"sam":[],"dim":[]}',
+  -- Effectif minimum requis : effectif_min_ouverture pour la première
+  -- heure de chaque créneau d'ouverture, effectif_min_fermeture pour la
+  -- dernière heure, effectif_min_journee pour le reste de la plage.
   effectif_min_ouverture integer not null default 1,
   effectif_min_fermeture integer not null default 1,
+  effectif_min_journee integer not null default 1,
   created_at timestamptz not null default now()
 );
 

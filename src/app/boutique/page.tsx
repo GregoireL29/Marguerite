@@ -39,6 +39,7 @@ export default function BoutiquePage() {
   const [horaires, setHoraires] = useState<Horaires>(EMPTY_HORAIRES);
   const [effectifOuverture, setEffectifOuverture] = useState("1");
   const [effectifFermeture, setEffectifFermeture] = useState("1");
+  const [effectifJournee, setEffectifJournee] = useState("1");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +69,9 @@ export default function BoutiquePage() {
 
     const { data: boutique, error: boutiqueError } = await supabase
       .from("boutiques")
-      .select("id, nom, horaires, effectif_min_ouverture, effectif_min_fermeture")
+      .select(
+        "id, nom, horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee"
+      )
       .eq("id", currentUser.boutique_id)
       .single();
 
@@ -83,6 +86,7 @@ export default function BoutiquePage() {
     setHoraires({ ...EMPTY_HORAIRES, ...(boutique.horaires ?? {}) });
     setEffectifOuverture(String(boutique.effectif_min_ouverture));
     setEffectifFermeture(String(boutique.effectif_min_fermeture));
+    setEffectifJournee(String(boutique.effectif_min_journee));
     setLoading(false);
   }, []);
 
@@ -131,6 +135,7 @@ export default function BoutiquePage() {
         horaires,
         effectif_min_ouverture: Number(effectifOuverture),
         effectif_min_fermeture: Number(effectifFermeture),
+        effectif_min_journee: Number(effectifJournee),
       })
       .eq("id", boutiqueId);
 
@@ -252,6 +257,23 @@ export default function BoutiquePage() {
               required
               value={effectifFermeture}
               onChange={(e) => setEffectifFermeture(e.target.value)}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-col gap-1">
+            <label
+              htmlFor="effectif_journee"
+              className="text-sm text-zinc-600"
+            >
+              Effectif minimum en journée
+            </label>
+            <input
+              id="effectif_journee"
+              type="number"
+              min="0"
+              required
+              value={effectifJournee}
+              onChange={(e) => setEffectifJournee(e.target.value)}
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
             />
           </div>
