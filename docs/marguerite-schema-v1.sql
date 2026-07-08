@@ -205,6 +205,31 @@ create table factures_fournisseurs (
 create index idx_factures_fournisseurs_fournisseur on factures_fournisseurs(fournisseur_id);
 create index idx_factures_fournisseurs_boutique_date on factures_fournisseurs(boutique_id, date_facture);
 
+create type cible_annonce as enum ('tous', 'managers_uniquement');
+
+create table annonces (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  auteur_id uuid not null references utilisateurs(id) on delete cascade,
+  titre text not null,
+  message text not null,
+  cible_role cible_annonce not null default 'tous',
+  created_at timestamptz not null default now()
+);
+
+create index idx_annonces_boutique on annonces(boutique_id);
+
+create table annonces_lectures (
+  id uuid primary key default uuid_generate_v4(),
+  annonce_id uuid not null references annonces(id) on delete cascade,
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  lu_at timestamptz not null default now(),
+  unique (annonce_id, utilisateur_id)
+);
+
+create index idx_annonces_lectures_annonce on annonces_lectures(annonce_id);
+create index idx_annonces_lectures_utilisateur on annonces_lectures(utilisateur_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -224,6 +249,8 @@ alter table documents enable row level security;
 alter table notes_frais enable row level security;
 alter table fournisseurs enable row level security;
 alter table factures_fournisseurs enable row level security;
+alter table annonces enable row level security;
+alter table annonces_lectures enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -265,6 +292,12 @@ create policy "authenticated_full_access" on fournisseurs
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on factures_fournisseurs
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on annonces
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on annonces_lectures
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
