@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { AppMenu } from "@/components/AppMenu";
@@ -8,13 +9,36 @@ import { OnboardingScreen } from "@/components/OnboardingScreen";
 
 type Status = "loading" | "logged-out" | "onboarding" | "ready";
 
+export interface UserProfile {
+  id: string;
+  nom: string;
+  couleur: string;
+  role: string;
+  structure_id: string;
+  boutique_id: string;
+}
+
+const UserProfileContext = createContext<UserProfile | null>(null);
+
+export function useUserProfile() {
+  return useContext(UserProfileContext);
+}
+
+// Écrans réservés au manager : un salarié qui y accède directement par
+// l'URL est renvoyé vers le Planning (lecture seule pour lui).
+const MANAGER_ONLY_ROUTES = ["/equipe", "/boutique", "/regles"];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
   const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const pathname = usePathname();
+  const router = useRouter();
 
   const checkOnboarding = useCallback(async (session: Session | null) => {
     if (!session) {
       setSession(null);
+      setProfile(null);
       setStatus("logged-out");
       return;
     }
@@ -23,11 +47,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const { data } = await supabase
       .from("utilisateurs")
-      .select("id, structure_id")
+      .select("id, nom, couleur, role, structure_id, boutique_id")
       .eq("auth_id", session.user.id)
       .maybeSingle();
 
-    setStatus(!data || !data.structure_id ? "onboarding" : "ready");
+    if (!data || !data.structure_id) {
+      setProfile(null);
+      setStatus("onboarding");
+      return;
+    }
+
+    setProfile(data as UserProfile);
+    setStatus("ready");
   }, []);
 
   useEffect(() => {
@@ -41,6 +72,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     return () => subscription.unsubscribe();
   }, [checkOnboarding]);
+
+  const isBlockedRoute =
+    status === "ready" &&
+    profile?.role === "salarie" &&
+    MANAGER_ONLY_ROUTES.includes(pathname);
+
+  useEffect(() => {
+    if (isBlockedRoute) {
+      router.replace("/");
+    }
+  }, [isBlockedRoute, router]);
 
   if (status === "loading") {
     return null;
@@ -57,9 +99,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <UserProfileContext.Provider value={profile}>
       {status === "ready" && <AppMenu />}
-      {children}
-    </>
+      {isBlockedRoute ? null : children}
+    </UserProfileContext.Provider>
   );
 }

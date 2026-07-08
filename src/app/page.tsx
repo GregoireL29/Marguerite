@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { useUserProfile } from "@/components/AppShell";
+import { SalarieWeekView } from "@/components/SalarieWeekView";
 
 type JourKey = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
 
@@ -358,7 +360,7 @@ function generateWeekCreneaux(
   return results;
 }
 
-export default function Home() {
+function ManagerPlanning() {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [horaires, setHoraires] = useState<Horaires>(EMPTY_HORAIRES);
   const [effectifOuverture, setEffectifOuverture] = useState(1);
@@ -910,4 +912,16 @@ export default function Home() {
       )}
     </main>
   );
+}
+
+export default function Home() {
+  const profile = useUserProfile();
+
+  if (!profile) return null;
+
+  if (profile.role === "salarie") {
+    return <SalarieWeekView />;
+  }
+
+  return <ManagerPlanning />;
 }
