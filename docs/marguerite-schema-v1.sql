@@ -175,6 +175,36 @@ create table notes_frais (
 create index idx_notes_frais_utilisateur on notes_frais(utilisateur_id);
 create index idx_notes_frais_boutique_statut on notes_frais(boutique_id, statut);
 
+create table fournisseurs (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  nom text not null,
+  siren text,
+  adresse text,
+  contact_commercial text,
+  created_at timestamptz not null default now()
+);
+
+create index idx_fournisseurs_boutique on fournisseurs(boutique_id);
+
+-- fichier_url stocke le chemin de l'objet dans le bucket "documents"
+-- (réutilisé, même logique d'URL signée que pour les autres onglets).
+create table factures_fournisseurs (
+  id uuid primary key default uuid_generate_v4(),
+  fournisseur_id uuid not null references fournisseurs(id) on delete cascade,
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  descriptif text not null,
+  montant_ht numeric(10,2) not null,
+  taux_tva numeric(5,2) not null,
+  categorie text not null,
+  fichier_url text not null,
+  date_facture date not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_factures_fournisseurs_fournisseur on factures_fournisseurs(fournisseur_id);
+create index idx_factures_fournisseurs_boutique_date on factures_fournisseurs(boutique_id, date_facture);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -192,6 +222,8 @@ alter table ventes_quotidiennes enable row level security;
 alter table objectifs enable row level security;
 alter table documents enable row level security;
 alter table notes_frais enable row level security;
+alter table fournisseurs enable row level security;
+alter table factures_fournisseurs enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -227,6 +259,12 @@ create policy "authenticated_full_access" on documents
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on notes_frais
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on fournisseurs
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on factures_fournisseurs
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
