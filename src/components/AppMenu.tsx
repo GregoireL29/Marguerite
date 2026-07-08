@@ -12,7 +12,7 @@ const TABS: { label: string; href?: string }[] = [
   { label: "Congés", href: "/conges" },
   { label: "Documents", href: "/documents" },
   { label: "Indicateurs", href: "/indicateurs" },
-  { label: "Notes de frais" },
+  { label: "Notes de frais", href: "/notes-frais" },
   { label: "Factures fournisseurs" },
   { label: "Annonces" },
   { label: "Onboarding" },
