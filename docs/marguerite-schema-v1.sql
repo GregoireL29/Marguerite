@@ -137,6 +137,25 @@ create table objectifs (
 
 create index idx_objectifs_boutique on objectifs(boutique_id);
 
+create type type_document as enum ('contrat', 'avenant', 'justificatif');
+
+-- fichier_url stocke le chemin de l'objet dans le bucket de stockage
+-- "documents" (bucket privé), pas une URL publique : le téléchargement se
+-- fait via une URL signée générée à la demande.
+create table documents (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  nom text not null,
+  type type_document not null,
+  uploaded_by uuid references utilisateurs(id) on delete set null,
+  fichier_url text not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_documents_utilisateur on documents(utilisateur_id);
+create index idx_documents_boutique on documents(boutique_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -152,6 +171,7 @@ alter table demandes_conges enable row level security;
 alter table taches enable row level security;
 alter table ventes_quotidiennes enable row level security;
 alter table objectifs enable row level security;
+alter table documents enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -182,3 +202,18 @@ create policy "authenticated_full_access" on ventes_quotidiennes
 
 create policy "authenticated_full_access" on objectifs
   for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on documents
+  for all to authenticated using (true) with check (true);
+
+-- Stockage : bucket privé dédié aux documents (contrats, avenants,
+-- justificatifs). Le téléchargement passe par des URL signées générées
+-- côté client, jamais par un accès public direct.
+insert into storage.buckets (id, name, public)
+values ('documents', 'documents', false)
+on conflict (id) do nothing;
+
+create policy "documents_authenticated_full_access" on storage.objects
+  for all to authenticated
+  using (bucket_id = 'documents')
+  with check (bucket_id = 'documents');
