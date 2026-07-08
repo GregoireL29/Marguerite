@@ -11,7 +11,7 @@ const TABS: { label: string; href?: string }[] = [
   { label: "Tâches du jour", href: "/taches" },
   { label: "Congés", href: "/conges" },
   { label: "Documents" },
-  { label: "Indicateurs" },
+  { label: "Indicateurs", href: "/indicateurs" },
   { label: "Notes de frais" },
   { label: "Factures fournisseurs" },
   { label: "Annonces" },

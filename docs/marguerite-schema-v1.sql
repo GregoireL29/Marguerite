@@ -110,6 +110,33 @@ create table taches (
 create index idx_taches_boutique_date on taches(boutique_id, date);
 create index idx_taches_assigne_a on taches(assigne_a);
 
+create table ventes_quotidiennes (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  date date not null,
+  chiffre_affaires numeric(10,2) not null,
+  frequentation integer not null,
+  created_at timestamptz not null default now(),
+  unique (boutique_id, date)
+);
+
+create index idx_ventes_quotidiennes_boutique_date on ventes_quotidiennes(boutique_id, date);
+
+create type periode_objectif as enum ('semaine', 'mois', 'annee');
+
+create table objectifs (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  periode periode_objectif not null,
+  date_debut date not null,
+  ca_cible numeric(10,2) not null,
+  panier_moyen_cible numeric(10,2) not null,
+  created_at timestamptz not null default now(),
+  unique (boutique_id, periode, date_debut)
+);
+
+create index idx_objectifs_boutique on objectifs(boutique_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -123,6 +150,8 @@ alter table plannings enable row level security;
 alter table creneaux enable row level security;
 alter table demandes_conges enable row level security;
 alter table taches enable row level security;
+alter table ventes_quotidiennes enable row level security;
+alter table objectifs enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -146,4 +175,10 @@ create policy "authenticated_full_access" on demandes_conges
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on taches
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on ventes_quotidiennes
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on objectifs
   for all to authenticated using (true) with check (true);
