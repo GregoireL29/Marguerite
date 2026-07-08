@@ -47,6 +47,9 @@ create table profils_salarie (
   heures_hebdo numeric(4,1) not null default 35,
   jours_repos_fixes jsonb not null default '[]',
   disponibilites jsonb not null default '[]',
+  -- Solde de congés en jours, optionnel : si non renseigné, l'écran
+  -- salarié n'affiche pas de solde restant.
+  solde_conges_jours integer,
   updated_at timestamptz not null default now()
 );
 
@@ -76,6 +79,20 @@ create index idx_creneaux_utilisateur on creneaux(utilisateur_id);
 create index idx_utilisateurs_structure on utilisateurs(structure_id);
 create index idx_boutiques_structure on boutiques(structure_id);
 
+create type statut_demande_conges as enum ('en_attente', 'validee', 'refusee');
+
+create table demandes_conges (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  date_debut date not null,
+  date_fin date not null,
+  message text,
+  statut statut_demande_conges not null default 'en_attente',
+  created_at timestamptz not null default now()
+);
+
+create index idx_demandes_conges_utilisateur on demandes_conges(utilisateur_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -87,6 +104,7 @@ alter table utilisateurs enable row level security;
 alter table profils_salarie enable row level security;
 alter table plannings enable row level security;
 alter table creneaux enable row level security;
+alter table demandes_conges enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -104,4 +122,7 @@ create policy "authenticated_full_access" on plannings
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on creneaux
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on demandes_conges
   for all to authenticated using (true) with check (true);
