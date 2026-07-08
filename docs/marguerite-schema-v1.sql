@@ -156,6 +156,25 @@ create table documents (
 create index idx_documents_utilisateur on documents(utilisateur_id);
 create index idx_documents_boutique on documents(boutique_id);
 
+create type statut_note_frais as enum ('en_attente', 'validee', 'refusee', 'remboursee');
+
+-- ticket_url stocke le chemin de l'objet dans le bucket "documents"
+-- (réutilisé, même logique d'URL signée que pour les documents RH).
+create table notes_frais (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  montant numeric(10,2) not null,
+  categorie text not null,
+  descriptif text not null,
+  ticket_url text not null,
+  statut statut_note_frais not null default 'en_attente',
+  created_at timestamptz not null default now()
+);
+
+create index idx_notes_frais_utilisateur on notes_frais(utilisateur_id);
+create index idx_notes_frais_boutique_statut on notes_frais(boutique_id, statut);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -172,6 +191,7 @@ alter table taches enable row level security;
 alter table ventes_quotidiennes enable row level security;
 alter table objectifs enable row level security;
 alter table documents enable row level security;
+alter table notes_frais enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -204,6 +224,9 @@ create policy "authenticated_full_access" on objectifs
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on documents
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on notes_frais
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
