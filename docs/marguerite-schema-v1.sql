@@ -93,6 +93,23 @@ create table demandes_conges (
 
 create index idx_demandes_conges_utilisateur on demandes_conges(utilisateur_id);
 
+create type categorie_tache as enum ('ouverture', 'journee', 'fermeture');
+create type statut_tache as enum ('a_faire', 'faite', 'reportee');
+
+create table taches (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  titre text not null,
+  categorie categorie_tache not null,
+  assigne_a uuid references utilisateurs(id) on delete set null,
+  date date not null,
+  statut statut_tache not null default 'a_faire',
+  created_at timestamptz not null default now()
+);
+
+create index idx_taches_boutique_date on taches(boutique_id, date);
+create index idx_taches_assigne_a on taches(assigne_a);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -105,6 +122,7 @@ alter table profils_salarie enable row level security;
 alter table plannings enable row level security;
 alter table creneaux enable row level security;
 alter table demandes_conges enable row level security;
+alter table taches enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -125,4 +143,7 @@ create policy "authenticated_full_access" on creneaux
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on demandes_conges
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on taches
   for all to authenticated using (true) with check (true);

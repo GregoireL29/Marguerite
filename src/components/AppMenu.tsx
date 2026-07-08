@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase/client";
 
 const TABS: { label: string; href?: string }[] = [
   { label: "Planning", href: "/" },
-  { label: "Tâches du jour" },
+  { label: "Tâches du jour", href: "/taches" },
   { label: "Congés", href: "/conges" },
   { label: "Documents" },
   { label: "Indicateurs" },

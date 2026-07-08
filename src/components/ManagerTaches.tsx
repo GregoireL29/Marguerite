@@ -1,0 +1,304 @@
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase/client";
+import { useUserProfile } from "@/components/AppShell";
+import { TacheReportConfirmation, type TacheStale } from "@/components/TacheReportConfirmation";
+
+type Categorie = "ouverture" | "journee" | "fermeture";
+type Statut = "a_faire" | "faite" | "reportee";
+
+const CATEGORIES: { value: Categorie; label: string }[] = [
+  { value: "ouverture", label: "Ouverture" },
+  { value: "journee", label: "Journée" },
+  { value: "fermeture", label: "Fermeture" },
+];
+
+interface Tache {
+  id: string;
+  titre: string;
+  categorie: Categorie;
+  assigne_a: string | null;
+  statut: Statut;
+  boutique_id: string;
+}
+
+interface Salarie {
+  id: string;
+  nom: string;
+}
+
+function toISODate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+export function ManagerTaches() {
+  const profile = useUserProfile();
+  const [staleTaches, setStaleTaches] = useState<TacheStale[] | null>(null);
+  const [taches, setTaches] = useState<Tache[]>([]);
+  const [salaries, setSalaries] = useState<Salarie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [titre, setTitre] = useState("");
+  const [categorie, setCategorie] = useState<Categorie>("ouverture");
+  const [assigneA, setAssigneA] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!profile) return;
+    setLoading(true);
+    setError(null);
+
+    const todayISO = toISODate(new Date());
+
+    const [staleRes, todayRes, salariesRes] = await Promise.all([
+      supabase
+        .from("taches")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .eq("boutique_id", profile.boutique_id)
+        .eq("statut", "a_faire")
+        .lt("date", todayISO),
+      supabase
+        .from("taches")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .eq("boutique_id", profile.boutique_id)
+        .eq("date", todayISO)
+        .order("created_at"),
+      supabase
+        .from("utilisateurs")
+        .select("id, nom")
+        .eq("structure_id", profile.structure_id)
+        .order("nom"),
+    ]);
+
+    if (staleRes.error) {
+      setError(staleRes.error.message);
+      setLoading(false);
+      return;
+    }
+    if (todayRes.error) {
+      setError(todayRes.error.message);
+      setLoading(false);
+      return;
+    }
+    if (salariesRes.error) {
+      setError(salariesRes.error.message);
+      setLoading(false);
+      return;
+    }
+
+    setStaleTaches((staleRes.data ?? []) as TacheStale[]);
+    setTaches((todayRes.data ?? []) as Tache[]);
+    setSalaries(salariesRes.data ?? []);
+    setLoading(false);
+  }, [profile]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function toggleStatut(t: Tache) {
+    const next = t.statut === "faite" ? "a_faire" : "faite";
+    const { error: updateError } = await supabase
+      .from("taches")
+      .update({ statut: next })
+      .eq("id", t.id);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    await load();
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    setSaving(true);
+    setError(null);
+
+    const { error: insertError } = await supabase.from("taches").insert({
+      boutique_id: profile.boutique_id,
+      titre: titre.trim(),
+      categorie,
+      assigne_a: assigneA || null,
+      date: toISODate(new Date()),
+    });
+
+    setSaving(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    setTitre("");
+    setCategorie("ouverture");
+    setAssigneA("");
+    setShowForm(false);
+    await load();
+  }
+
+  if (!profile) return null;
+
+  if (loading || staleTaches === null) {
+    return (
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+        <p className="text-sm text-zinc-500">Chargement...</p>
+      </main>
+    );
+  }
+
+  if (staleTaches.length > 0) {
+    return <TacheReportConfirmation taches={staleTaches} onDone={load} />;
+  }
+
+  const total = taches.length;
+  const done = taches.filter((t) => t.statut === "faite").length;
+  const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+  const salariesById = Object.fromEntries(salaries.map((s) => [s.id, s.nom]));
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-medium text-zinc-900">Tâches du jour</h1>
+        <button
+          onClick={() => setShowForm((s) => !s)}
+          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
+        >
+          {showForm ? "Annuler" : "+ Ajouter une tâche"}
+        </button>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {total > 0 && (
+        <div className="flex flex-col gap-1">
+          <div className="h-2 w-full overflow-hidden rounded bg-zinc-100">
+            <div
+              className="h-full bg-zinc-900 transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <p className="text-xs text-zinc-500">
+            {done} / {total} tâches faites ({progress}%)
+          </p>
+        </div>
+      )}
+
+      {showForm && (
+        <form
+          onSubmit={handleAdd}
+          className="flex flex-col gap-3 rounded-md border border-zinc-200 p-4"
+        >
+          <div className="flex flex-col gap-1">
+            <label htmlFor="titre" className="text-sm text-zinc-600">
+              Titre
+            </label>
+            <input
+              id="titre"
+              required
+              value={titre}
+              onChange={(e) => setTitre(e.target.value)}
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="categorie" className="text-sm text-zinc-600">
+                Catégorie
+              </label>
+              <select
+                id="categorie"
+                value={categorie}
+                onChange={(e) => setCategorie(e.target.value as Categorie)}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="assigne_a" className="text-sm text-zinc-600">
+                Assigner à
+              </label>
+              <select
+                id="assigne_a"
+                value={assigneA}
+                onChange={(e) => setAssigneA(e.target.value)}
+                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              >
+                <option value="">Non assigné</option>
+                {salaries.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.nom}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button
+            type="submit"
+            disabled={saving}
+            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {saving ? "Ajout..." : "Ajouter"}
+          </button>
+        </form>
+      )}
+
+      {total === 0 ? (
+        <p className="text-sm text-zinc-400">Aucune tâche aujourd&apos;hui.</p>
+      ) : (
+        CATEGORIES.map(({ value, label }) => {
+          const items = taches.filter((t) => t.categorie === value);
+          if (items.length === 0) return null;
+
+          return (
+            <div key={value} className="flex flex-col gap-2">
+              <h2 className="text-sm font-medium text-zinc-900">{label}</h2>
+              <ul className="flex flex-col divide-y divide-zinc-200">
+                {items.map((t) => (
+                  <li
+                    key={t.id}
+                    className="flex items-center justify-between py-2"
+                  >
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={t.statut === "faite"}
+                        onChange={() => toggleStatut(t)}
+                      />
+                      <span
+                        className={
+                          t.statut === "faite"
+                            ? "text-zinc-400 line-through"
+                            : "text-zinc-900"
+                        }
+                      >
+                        {t.titre}
+                      </span>
+                    </label>
+                    <span className="text-xs text-zinc-400">
+                      {t.assigne_a
+                        ? (salariesById[t.assigne_a] ?? "?")
+                        : "Non assigné"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })
+      )}
+    </main>
+  );
+}
