@@ -230,6 +230,50 @@ create table annonces_lectures (
 create index idx_annonces_lectures_annonce on annonces_lectures(annonce_id);
 create index idx_annonces_lectures_utilisateur on annonces_lectures(utilisateur_id);
 
+-- support_url stocke le chemin de l'objet dans le bucket "documents"
+-- (réutilisé), nullable tant qu'aucun support n'a été déposé.
+create table modules_formation (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  titre text not null,
+  ordre integer not null,
+  support_url text,
+  created_at timestamptz not null default now()
+);
+
+create index idx_modules_formation_boutique on modules_formation(boutique_id);
+
+-- options : tableau jsonb de chaînes (les choix proposés).
+-- reponse_correcte : index (0-based) du bon choix dans "options".
+create table questions_qcm (
+  id uuid primary key default uuid_generate_v4(),
+  module_id uuid not null references modules_formation(id) on delete cascade,
+  question text not null,
+  options jsonb not null,
+  reponse_correcte integer not null,
+  ordre integer not null
+);
+
+create index idx_questions_qcm_module on questions_qcm(module_id);
+
+create type statut_progression_formation as enum ('verrouille', 'en_cours', 'complete');
+
+-- Table volontairement creuse : une ligne n'existe que pour un module
+-- qu'un salarié a démarré ou terminé. L'absence de ligne pour un module
+-- signifie "verrouillé" (jamais atteint).
+create table progression_formation (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  module_id uuid not null references modules_formation(id) on delete cascade,
+  statut statut_progression_formation not null default 'verrouille',
+  score integer,
+  completed_at timestamptz,
+  unique (utilisateur_id, module_id)
+);
+
+create index idx_progression_formation_utilisateur on progression_formation(utilisateur_id);
+create index idx_progression_formation_module on progression_formation(module_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -251,6 +295,9 @@ alter table fournisseurs enable row level security;
 alter table factures_fournisseurs enable row level security;
 alter table annonces enable row level security;
 alter table annonces_lectures enable row level security;
+alter table modules_formation enable row level security;
+alter table questions_qcm enable row level security;
+alter table progression_formation enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -298,6 +345,15 @@ create policy "authenticated_full_access" on annonces
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on annonces_lectures
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on modules_formation
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on questions_qcm
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on progression_formation
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
