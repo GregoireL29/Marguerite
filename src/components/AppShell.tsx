@@ -26,7 +26,7 @@ export function useUserProfile() {
 
 // Écrans réservés au manager : un salarié qui y accède directement par
 // l'URL est renvoyé vers le Planning (lecture seule pour lui).
-const MANAGER_ONLY_ROUTES = ["/equipe", "/boutique", "/regles"];
+const MANAGER_ONLY_ROUTES = ["/equipe", "/boutique", "/regles", "/indicateurs"];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("loading");
@@ -76,7 +76,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isBlockedRoute =
     status === "ready" &&
     profile?.role === "salarie" &&
-    MANAGER_ONLY_ROUTES.includes(pathname);
+    MANAGER_ONLY_ROUTES.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    );
 
   useEffect(() => {
     if (isBlockedRoute) {
