@@ -30,6 +30,7 @@ interface ProfilSalarie {
   type_contrat: string;
   heures_hebdo: number;
   jours_repos_fixes: JourRepos[];
+  solde_conges_jours: number | null;
 }
 
 interface Salarie {
@@ -47,6 +48,7 @@ interface FormState {
   type_contrat: string;
   heures_hebdo: string;
   jours_repos_fixes: JourRepos[];
+  solde_conges_jours: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -56,6 +58,7 @@ const EMPTY_FORM: FormState = {
   type_contrat: "cdi_temps_plein",
   heures_hebdo: "35",
   jours_repos_fixes: [],
+  solde_conges_jours: "",
 };
 
 export default function EquipePage() {
@@ -104,6 +107,10 @@ export default function EquipePage() {
       type_contrat: profil?.type_contrat ?? "cdi_temps_plein",
       heures_hebdo: profil ? String(profil.heures_hebdo) : "35",
       jours_repos_fixes: profil?.jours_repos_fixes ?? [],
+      solde_conges_jours:
+        profil?.solde_conges_jours != null
+          ? String(profil.solde_conges_jours)
+          : "",
     });
     setError(null);
     setMode("form");
@@ -124,6 +131,10 @@ export default function EquipePage() {
     setError(null);
 
     const heuresHebdo = Number(form.heures_hebdo);
+    const soldeCongesJours =
+      form.solde_conges_jours.trim() === ""
+        ? null
+        : Number(form.solde_conges_jours);
 
     if (editingId) {
       const { error: updateUserError } = await supabase
@@ -144,6 +155,7 @@ export default function EquipePage() {
         type_contrat: form.type_contrat,
         heures_hebdo: heuresHebdo,
         jours_repos_fixes: form.jours_repos_fixes,
+        solde_conges_jours: soldeCongesJours,
       };
 
       const { error: profilError } = existingProfil
@@ -203,6 +215,7 @@ export default function EquipePage() {
           type_contrat: form.type_contrat,
           heures_hebdo: heuresHebdo,
           jours_repos_fixes: form.jours_repos_fixes,
+          solde_conges_jours: soldeCongesJours,
         });
 
       if (insertProfilError) {
@@ -354,6 +367,29 @@ export default function EquipePage() {
               value={form.heures_hebdo}
               onChange={(e) =>
                 setForm((f) => ({ ...f, heures_hebdo: e.target.value }))
+              }
+              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="solde_conges_jours"
+              className="text-sm text-zinc-600"
+            >
+              Solde de congés (jours, optionnel)
+            </label>
+            <input
+              id="solde_conges_jours"
+              type="number"
+              step="0.5"
+              min="0"
+              value={form.solde_conges_jours}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  solde_conges_jours: e.target.value,
+                }))
               }
               className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
             />
