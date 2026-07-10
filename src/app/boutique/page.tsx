@@ -160,7 +160,7 @@ export default function BoutiquePage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div>
-        <Link href="/" className="text-sm text-zinc-500 hover:underline">
+        <Link href="/planning" className="text-sm text-zinc-500 hover:underline">
           &larr; Planning
         </Link>
         <h1 className="mt-1 text-xl font-medium text-zinc-900">
