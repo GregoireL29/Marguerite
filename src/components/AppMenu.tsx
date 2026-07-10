@@ -16,7 +16,7 @@ const TABS: { label: string; href?: string }[] = [
   { label: "Factures fournisseurs", href: "/factures-fournisseurs" },
   { label: "Annonces", href: "/annonces" },
   { label: "Onboarding", href: "/onboarding" },
-  { label: "Rappels et échéances" },
+  { label: "Rappels et échéances", href: "/echeances" },
   { label: "Messagerie" },
 ];
 
