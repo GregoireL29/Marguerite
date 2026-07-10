@@ -152,7 +152,7 @@ export default function BoutiquePage() {
   if (loading) {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       </main>
     );
   }
@@ -160,36 +160,36 @@ export default function BoutiquePage() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div>
-        <Link href="/planning" className="text-sm text-zinc-500 hover:underline">
+        <Link href="/planning" className="text-sm text-muted-foreground hover:underline">
           &larr; Planning
         </Link>
-        <h1 className="mt-1 text-xl font-medium text-zinc-900">
+        <h1 className="mt-1 text-xl font-medium text-foreground">
           Ma boutique{nomBoutique ? ` — ${nomBoutique}` : ""}
         </h1>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-green-600">Enregistré.</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {saved && <p className="text-sm text-green-600 dark:text-green-400">Enregistré.</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col divide-y divide-zinc-200">
+        <div className="flex flex-col divide-y divide-border">
           {JOURS.map(({ key, label }) => (
             <div key={key} className="flex flex-col gap-2 py-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-zinc-900">
+                <span className="text-sm font-medium text-foreground">
                   {label}
                 </span>
                 <button
                   type="button"
                   onClick={() => addCreneau(key)}
-                  className="text-xs text-zinc-600 hover:underline"
+                  className="text-xs text-muted-foreground hover:underline"
                 >
                   + Ajouter un créneau
                 </button>
               </div>
 
               {horaires[key].length === 0 && (
-                <p className="text-xs text-zinc-400">Fermé</p>
+                <p className="text-xs text-faint-foreground">Fermé</p>
               )}
 
               {horaires[key].map((c, i) => (
@@ -200,21 +200,21 @@ export default function BoutiquePage() {
                     onChange={(e) =>
                       updateCreneau(key, i, "debut", e.target.value)
                     }
-                    className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm outline-none focus:border-zinc-500"
+                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
                   />
-                  <span className="text-sm text-zinc-400">&ndash;</span>
+                  <span className="text-sm text-faint-foreground">&ndash;</span>
                   <input
                     type="time"
                     value={c.fin}
                     onChange={(e) =>
                       updateCreneau(key, i, "fin", e.target.value)
                     }
-                    className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm outline-none focus:border-zinc-500"
+                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
                   />
                   <button
                     type="button"
                     onClick={() => removeCreneau(key, i)}
-                    className="text-sm text-zinc-400 hover:text-red-600"
+                    className="text-sm text-faint-foreground hover:text-red-600 dark:text-red-400 dark:hover:text-red-400"
                     aria-label="Supprimer ce créneau"
                   >
                     &#10005;
@@ -229,7 +229,7 @@ export default function BoutiquePage() {
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="effectif_ouverture"
-              className="text-sm text-zinc-600"
+              className="text-sm text-muted-foreground"
             >
               Effectif minimum à l&apos;ouverture
             </label>
@@ -240,13 +240,13 @@ export default function BoutiquePage() {
               required
               value={effectifOuverture}
               onChange={(e) => setEffectifOuverture(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="effectif_fermeture"
-              className="text-sm text-zinc-600"
+              className="text-sm text-muted-foreground"
             >
               Effectif minimum à la fermeture
             </label>
@@ -257,13 +257,13 @@ export default function BoutiquePage() {
               required
               value={effectifFermeture}
               onChange={(e) => setEffectifFermeture(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor="effectif_journee"
-              className="text-sm text-zinc-600"
+              className="text-sm text-muted-foreground"
             >
               Effectif minimum en journée
             </label>
@@ -274,7 +274,7 @@ export default function BoutiquePage() {
               required
               value={effectifJournee}
               onChange={(e) => setEffectifJournee(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
         </div>
@@ -282,7 +282,7 @@ export default function BoutiquePage() {
         <button
           type="submit"
           disabled={saving}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Enregistrement..." : "Enregistrer"}
         </button>

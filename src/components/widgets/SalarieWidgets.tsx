@@ -148,7 +148,7 @@ export function WidgetMesTaches() {
                 onChange={() => toggle(t)}
               />
               <span
-                className={t.statut === "faite" ? "text-zinc-400 line-through" : "text-zinc-900"}
+                className={t.statut === "faite" ? "text-faint-foreground line-through" : "text-foreground"}
               >
                 {t.titre}
               </span>
@@ -256,14 +256,17 @@ export function WidgetMaProgressionObjectif() {
         <WidgetEmpty text="Aucun objectif défini pour le moment." />
       ) : (
         <div className="flex flex-col gap-1.5">
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             {PERIODE_LABEL[progress.periode]} — {Math.round(progress.realise).toLocaleString("fr-FR")} € /{" "}
             {Math.round(progress.cible).toLocaleString("fr-FR")} €
           </p>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
-            <div className="h-full rounded-full bg-zinc-900" style={{ width: `${percent}%` }} />
+          <div className="h-2 w-full overflow-hidden rounded-full bg-border/30">
+            <div
+              className={`h-full rounded-full ${percent >= 100 ? "bg-gold" : "bg-accent"}`}
+              style={{ width: `${percent}%` }}
+            />
           </div>
-          <p className="text-xs text-zinc-400">{percent}% de l&apos;objectif atteint</p>
+          <p className="text-xs text-faint-foreground">{percent}% de l&apos;objectif atteint</p>
         </div>
       )}
     </WidgetCard>
@@ -344,12 +347,14 @@ export function WidgetMonParcoursFormation() {
       ) : state.total === 0 ? (
         <WidgetEmpty text="Aucun module de formation pour l'instant." />
       ) : state.activeTitre === null ? (
-        <p className="text-xs text-green-700">Formation terminée 🎉</p>
+        <span className="self-start rounded-full bg-gold px-2 py-0.5 text-xs font-medium text-gold-foreground">
+          Formation terminée 🎉
+        </span>
       ) : (
         <div className="flex flex-col gap-1">
-          <p className="text-xs text-zinc-500">Module en cours</p>
-          <p className="text-sm text-zinc-900">{state.activeTitre}</p>
-          <p className="text-xs text-zinc-400">
+          <p className="text-xs text-muted-foreground">Module en cours</p>
+          <p className="text-sm text-foreground">{state.activeTitre}</p>
+          <p className="text-xs text-faint-foreground">
             {state.complete}/{state.total} modules complétés
           </p>
         </div>

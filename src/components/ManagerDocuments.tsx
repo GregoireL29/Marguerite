@@ -13,9 +13,9 @@ const TYPE_LABEL: Record<TypeDocument, string> = {
 };
 
 const TYPE_STYLE: Record<TypeDocument, string> = {
-  contrat: "bg-zinc-900 text-white",
+  contrat: "bg-accent text-accent-foreground",
   avenant: "bg-amber-100 text-amber-700",
-  justificatif: "bg-zinc-100 text-zinc-600",
+  justificatif: "bg-border/30 text-muted-foreground",
 };
 
 interface Salarie {
@@ -167,27 +167,27 @@ export function ManagerDocuments() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Documents</h1>
+      <h1 className="text-xl font-medium text-foreground">Documents</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <form
         onSubmit={handleUpload}
-        className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4"
+        className="flex flex-col gap-4 rounded-lg border border-border p-4"
       >
-        <p className="text-sm font-medium text-zinc-900">
+        <p className="text-sm font-medium text-foreground">
           Déposer un document pour un salarié
         </p>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="doc-salarie" className="text-sm text-zinc-600">
+          <label htmlFor="doc-salarie" className="text-sm text-muted-foreground">
             Salarié
           </label>
           <select
             id="doc-salarie"
             value={utilisateurId}
             onChange={(e) => setUtilisateurId(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           >
             {salaries.map((s) => (
               <option key={s.id} value={s.id}>
@@ -198,14 +198,14 @@ export function ManagerDocuments() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="doc-type" className="text-sm text-zinc-600">
+          <label htmlFor="doc-type" className="text-sm text-muted-foreground">
             Type
           </label>
           <select
             id="doc-type"
             value={type}
             onChange={(e) => setType(e.target.value as "contrat" | "avenant")}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           >
             <option value="contrat">Contrat</option>
             <option value="avenant">Avenant</option>
@@ -213,7 +213,7 @@ export function ManagerDocuments() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="doc-nom" className="text-sm text-zinc-600">
+          <label htmlFor="doc-nom" className="text-sm text-muted-foreground">
             Nom du document
           </label>
           <input
@@ -221,12 +221,12 @@ export function ManagerDocuments() {
             value={nom}
             onChange={(e) => setNom(e.target.value)}
             placeholder="ex. Contrat CDI"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="manager-doc-file" className="text-sm text-zinc-600">
+          <label htmlFor="manager-doc-file" className="text-sm text-muted-foreground">
             Fichier
           </label>
           <input
@@ -235,14 +235,14 @@ export function ManagerDocuments() {
             type="file"
             required
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-zinc-600"
+            className="text-sm text-muted-foreground"
           />
         </div>
 
         <button
           type="submit"
           disabled={uploading || !file || !utilisateurId}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {uploading ? "Envoi..." : "Déposer le document"}
         </button>
@@ -250,16 +250,16 @@ export function ManagerDocuments() {
 
       <div className="flex flex-col gap-6">
         {loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : grouped.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucun document pour l&apos;instant.</p>
+          <p className="text-sm text-faint-foreground">Aucun document pour l&apos;instant.</p>
         ) : (
           grouped.map((g) => (
             <div key={g.salarie.id} className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-zinc-900">
+              <h2 className="text-sm font-medium text-foreground">
                 {salarieName(g.salarie.id)}
               </h2>
-              <ul className="flex flex-col divide-y divide-zinc-200">
+              <ul className="flex flex-col divide-y divide-border">
                 {g.docs.map((d) => (
                   <li key={d.id} className="flex items-center justify-between py-3">
                     <div className="flex items-center gap-2">
@@ -269,14 +269,14 @@ export function ManagerDocuments() {
                         {TYPE_LABEL[d.type]}
                       </span>
                       <div>
-                        <p className="text-sm text-zinc-900">{d.nom}</p>
-                        <p className="text-xs text-zinc-500">{formatDate(d.created_at)}</p>
+                        <p className="text-sm text-foreground">{d.nom}</p>
+                        <p className="text-xs text-muted-foreground">{formatDate(d.created_at)}</p>
                       </div>
                     </div>
                     <button
                       onClick={() => handleDownload(d)}
                       disabled={downloadingId === d.id}
-                      className="text-sm text-zinc-600 hover:underline disabled:opacity-50"
+                      className="text-sm text-muted-foreground hover:underline disabled:opacity-50"
                     >
                       Télécharger
                     </button>

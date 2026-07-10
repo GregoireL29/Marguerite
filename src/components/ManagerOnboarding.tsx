@@ -14,9 +14,9 @@ const STATUT_LABEL: Record<Statut, string> = {
 };
 
 const STATUT_STYLE: Record<Statut, string> = {
-  verrouille: "bg-zinc-100 text-zinc-400",
+  verrouille: "bg-border/30 text-faint-foreground",
   en_cours: "bg-amber-100 text-amber-700",
-  complete: "bg-green-100 text-green-700",
+  complete: "bg-green-100 text-green-700 dark:text-green-400",
 };
 
 interface Module {
@@ -291,13 +291,13 @@ export function ManagerOnboarding() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Onboarding nouveaux vendeurs</h1>
+      <h1 className="text-xl font-medium text-foreground">Onboarding nouveaux vendeurs</h1>
 
       <div className="flex gap-1">
         <button
           onClick={() => setOnglet("modules")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "modules" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "modules" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Modules
@@ -305,31 +305,31 @@ export function ManagerOnboarding() {
         <button
           onClick={() => setOnglet("suivi")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "suivi" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "suivi" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Suivi
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {onglet === "modules" ? (
         <div className="flex flex-col gap-6">
           <form
             onSubmit={handleCreateModule}
-            className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4"
+            className="flex flex-col gap-3 rounded-lg border border-border p-4"
           >
-            <p className="text-sm font-medium text-zinc-900">Nouveau module</p>
+            <p className="text-sm font-medium text-foreground">Nouveau module</p>
             <input
               required
               placeholder="Titre du module"
               value={nouveauTitre}
               onChange={(e) => setNouveauTitre(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <div className="flex flex-col gap-1">
-              <label htmlFor="module-file" className="text-sm text-zinc-600">
+              <label htmlFor="module-file" className="text-sm text-muted-foreground">
                 Support (PDF/PPT, optionnel)
               </label>
               <input
@@ -338,22 +338,22 @@ export function ManagerOnboarding() {
                 type="file"
                 accept=".pdf,.ppt,.pptx"
                 onChange={(e) => setNouveauFile(e.target.files?.[0] ?? null)}
-                className="text-sm text-zinc-600"
+                className="text-sm text-muted-foreground"
               />
             </div>
             <button
               type="submit"
               disabled={creatingModule || !nouveauTitre.trim()}
-              className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
             >
               {creatingModule ? "Création..." : "Créer le module"}
             </button>
           </form>
 
           {loading ? (
-            <p className="text-sm text-zinc-500">Chargement...</p>
+            <p className="text-sm text-muted-foreground">Chargement...</p>
           ) : sortedModules.length === 0 ? (
-            <p className="text-sm text-zinc-400">Aucun module pour l&apos;instant.</p>
+            <p className="text-sm text-faint-foreground">Aucun module pour l&apos;instant.</p>
           ) : (
             <ul className="flex flex-col gap-3">
               {sortedModules.map((m, idx) => {
@@ -363,36 +363,36 @@ export function ManagerOnboarding() {
                 const expanded = expandedModuleId === m.id;
 
                 return (
-                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-4">
+                  <li key={m.id} className="flex flex-col gap-2 rounded-lg border border-border p-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-zinc-900">
+                      <p className="text-sm font-medium text-foreground">
                         {idx + 1}. {m.titre}
                       </p>
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => moveModule(m, "up")}
                           disabled={idx === 0 || reordering}
-                          className="text-xs text-zinc-500 hover:underline disabled:opacity-30"
+                          className="text-xs text-muted-foreground hover:underline disabled:opacity-30"
                         >
                           ↑
                         </button>
                         <button
                           onClick={() => moveModule(m, "down")}
                           disabled={idx === sortedModules.length - 1 || reordering}
-                          className="text-xs text-zinc-500 hover:underline disabled:opacity-30"
+                          className="text-xs text-muted-foreground hover:underline disabled:opacity-30"
                         >
                           ↓
                         </button>
                       </div>
                     </div>
 
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-muted-foreground">
                       {m.support_url ? "Support déposé" : "Aucun support"} ·{" "}
                       {moduleQuestions.length} question{moduleQuestions.length > 1 ? "s" : ""}
                     </p>
 
                     <div className="flex items-center gap-3">
-                      <label className="text-xs text-zinc-500 hover:underline cursor-pointer">
+                      <label className="text-xs text-muted-foreground hover:underline cursor-pointer">
                         {replacingSupportId === m.id
                           ? "Envoi..."
                           : m.support_url
@@ -412,27 +412,27 @@ export function ManagerOnboarding() {
                       </label>
                       <button
                         onClick={() => toggleExpanded(m.id)}
-                        className="text-xs text-zinc-500 hover:underline"
+                        className="text-xs text-muted-foreground hover:underline"
                       >
                         {expanded ? "Masquer les questions" : "Gérer les questions"}
                       </button>
                     </div>
 
                     {expanded && (
-                      <div className="mt-2 flex flex-col gap-3 border-t border-zinc-100 pt-3">
+                      <div className="mt-2 flex flex-col gap-3 border-t border-border pt-3">
                         {moduleQuestions.length > 0 && (
                           <ul className="flex flex-col gap-2">
                             {moduleQuestions.map((q, qIdx) => (
-                              <li key={q.id} className="text-sm text-zinc-700">
+                              <li key={q.id} className="text-sm text-foreground">
                                 <p className="font-medium">
                                   {qIdx + 1}. {q.question}
                                 </p>
-                                <ul className="ml-4 list-disc text-xs text-zinc-500">
+                                <ul className="ml-4 list-disc text-xs text-muted-foreground">
                                   {q.options.map((o, oIdx) => (
                                     <li
                                       key={oIdx}
                                       className={
-                                        oIdx === q.reponse_correcte ? "font-medium text-green-700" : ""
+                                        oIdx === q.reponse_correcte ? "font-medium text-green-700 dark:text-green-400" : ""
                                       }
                                     >
                                       {o}
@@ -447,15 +447,15 @@ export function ManagerOnboarding() {
 
                         <form
                           onSubmit={(e) => handleAddQuestion(e, m.id)}
-                          className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3"
+                          className="flex flex-col gap-2 rounded-md border border-border p-3"
                         >
-                          <p className="text-xs font-medium text-zinc-900">Ajouter une question</p>
+                          <p className="text-xs font-medium text-foreground">Ajouter une question</p>
                           <input
                             required
                             placeholder="Intitulé de la question"
                             value={qQuestion}
                             onChange={(e) => setQQuestion(e.target.value)}
-                            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                           />
                           {qOptions.map((opt, oIdx) => (
                             <div key={oIdx} className="flex items-center gap-2">
@@ -470,13 +470,13 @@ export function ManagerOnboarding() {
                                 placeholder={`Choix ${oIdx + 1}`}
                                 value={opt}
                                 onChange={(e) => updateOption(oIdx, e.target.value)}
-                                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                className="flex-1 rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                               />
                               {qOptions.length > 2 && (
                                 <button
                                   type="button"
                                   onClick={() => removeOptionField(oIdx)}
-                                  className="text-xs text-zinc-400 hover:text-zinc-600"
+                                  className="text-xs text-faint-foreground hover:text-foreground"
                                 >
                                   ✕
                                 </button>
@@ -487,14 +487,14 @@ export function ManagerOnboarding() {
                             type="button"
                             onClick={addOptionField}
                             disabled={qOptions.length >= 6}
-                            className="self-start text-xs text-zinc-500 hover:underline disabled:opacity-30"
+                            className="self-start text-xs text-muted-foreground hover:underline disabled:opacity-30"
                           >
                             + Ajouter un choix
                           </button>
                           <button
                             type="submit"
                             disabled={savingQuestion}
-                            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
                           >
                             {savingQuestion ? "Ajout..." : "Ajouter la question"}
                           </button>
@@ -508,17 +508,17 @@ export function ManagerOnboarding() {
           )}
         </div>
       ) : loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : salaries.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucun salarié pour l&apos;instant.</p>
+        <p className="text-sm text-faint-foreground">Aucun salarié pour l&apos;instant.</p>
       ) : sortedModules.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucun module pour l&apos;instant.</p>
+        <p className="text-sm text-faint-foreground">Aucun module pour l&apos;instant.</p>
       ) : (
         <ul className="flex flex-col gap-4">
           {salaries.map((s) => (
-            <li key={s.id} className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-4">
-              <p className="text-sm font-medium text-zinc-900">{s.nom}</p>
-              <ul className="flex flex-col divide-y divide-zinc-100">
+            <li key={s.id} className="flex flex-col gap-2 rounded-lg border border-border p-4">
+              <p className="text-sm font-medium text-foreground">{s.nom}</p>
+              <ul className="flex flex-col divide-y divide-border">
                 {sortedModules.map((m) => {
                   const row = progression.find(
                     (p) => p.utilisateur_id === s.id && p.module_id === m.id
@@ -526,10 +526,10 @@ export function ManagerOnboarding() {
                   const statut: Statut = row?.statut ?? "verrouille";
                   return (
                     <li key={m.id} className="flex items-center justify-between py-1.5">
-                      <span className="text-sm text-zinc-700">{m.titre}</span>
+                      <span className="text-sm text-foreground">{m.titre}</span>
                       <div className="flex items-center gap-2">
                         {row?.score != null && (
-                          <span className="text-xs text-zinc-500">{row.score}%</span>
+                          <span className="text-xs text-muted-foreground">{row.score}%</span>
                         )}
                         <span
                           className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_STYLE[statut]}`}

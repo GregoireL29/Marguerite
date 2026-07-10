@@ -90,7 +90,7 @@ export function SalarieTaches() {
   if (loading || staleTaches === null) {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       </main>
     );
   }
@@ -101,16 +101,16 @@ export function SalarieTaches() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Tâches du jour</h1>
+      <h1 className="text-xl font-medium text-foreground">Tâches du jour</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {taches.length === 0 ? (
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-faint-foreground">
           Aucune tâche pour aujourd&apos;hui.
         </p>
       ) : (
-        <ul className="flex flex-col divide-y divide-zinc-200">
+        <ul className="flex flex-col divide-y divide-border">
           {taches.map((t) => (
             <li key={t.id} className="flex items-center gap-3 py-3">
               <input
@@ -121,8 +121,8 @@ export function SalarieTaches() {
               <span
                 className={`text-sm ${
                   t.statut === "faite"
-                    ? "text-zinc-400 line-through"
-                    : "text-zinc-900"
+                    ? "text-faint-foreground line-through"
+                    : "text-foreground"
                 }`}
               >
                 {t.titre}

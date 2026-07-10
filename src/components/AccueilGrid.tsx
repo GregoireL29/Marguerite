@@ -103,8 +103,8 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
   if (!profile || pinnedKeys === null) {
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-        <h1 className="text-xl font-medium text-zinc-900">Accueil</h1>
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <h1 className="text-xl font-medium text-foreground">Accueil</h1>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       </main>
     );
   }
@@ -124,40 +124,40 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-zinc-900">Accueil</h1>
+        <h1 className="text-xl font-medium text-foreground">Accueil</h1>
         <button
           onClick={() => setPersonalizing((p) => !p)}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+          className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40"
         >
           {personalizing ? "Terminer" : "Personnaliser"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {personalizing ? (
-        <ul className="flex flex-col divide-y divide-zinc-200">
+        <ul className="flex flex-col divide-y divide-border">
           {widgetsForPersonalize.map((w) => {
             const isPinned = pinnedKeys.includes(w.key);
             const idx = pinnedKeys.indexOf(w.key);
 
             return (
               <li key={w.key} className="flex items-center justify-between gap-3 py-3">
-                <span className="text-sm text-zinc-900">{w.label}</span>
+                <span className="text-sm text-foreground">{w.label}</span>
                 <div className="flex shrink-0 items-center gap-2">
                   {isPinned && (
                     <>
                       <button
                         onClick={() => move(w.key, "up")}
                         disabled={idx === 0 || saving}
-                        className="text-xs text-zinc-500 hover:underline disabled:opacity-30"
+                        className="text-xs text-muted-foreground hover:underline disabled:opacity-30"
                       >
                         ↑
                       </button>
                       <button
                         onClick={() => move(w.key, "down")}
                         disabled={idx === pinnedKeys.length - 1 || saving}
-                        className="text-xs text-zinc-500 hover:underline disabled:opacity-30"
+                        className="text-xs text-muted-foreground hover:underline disabled:opacity-30"
                       >
                         ↓
                       </button>
@@ -168,8 +168,8 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
                     disabled={saving}
                     className={`rounded-md px-3 py-1.5 text-xs font-medium disabled:opacity-50 ${
                       isPinned
-                        ? "border border-zinc-300 text-zinc-700"
-                        : "bg-zinc-900 text-white"
+                        ? "border border-border text-foreground"
+                        : "bg-accent text-accent-foreground hover:bg-accent-hover"
                     }`}
                   >
                     {isPinned ? "Désépingler" : "Épingler"}
@@ -180,7 +180,7 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
           })}
         </ul>
       ) : pinnedWidgets.length === 0 ? (
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-faint-foreground">
           Aucun widget épinglé. Clique sur « Personnaliser » pour en ajouter.
         </p>
       ) : (

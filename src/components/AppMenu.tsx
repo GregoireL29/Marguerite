@@ -5,6 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
+import { MargueriteLogo } from "@/components/MargueriteLogo";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const TABS: { label: string; href?: string }[] = [
   { label: "Accueil", href: "/" },
@@ -44,30 +46,41 @@ export function AppMenu() {
   if (!loaded || !session) return null;
 
   return (
-    <nav className="flex gap-1 overflow-x-auto border-b border-zinc-200 px-4 py-2">
-      {TABS.map((tab) =>
-        tab.href ? (
-          <Link
-            key={tab.label}
-            href={tab.href}
-            className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium ${
-              pathname === tab.href
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-700 hover:bg-zinc-100"
-            }`}
-          >
-            {tab.label}
-          </Link>
-        ) : (
-          <span
-            key={tab.label}
-            title="Bientôt disponible"
-            className="shrink-0 cursor-not-allowed whitespace-nowrap rounded-md px-3 py-2 text-sm text-zinc-400"
-          >
-            {tab.label}
+    <header className="flex flex-col border-b border-border bg-card">
+      <div className="flex items-center justify-between px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <MargueriteLogo className="h-7 w-7" />
+          <span className="text-sm font-semibold tracking-tight text-foreground">
+            Marguerite
           </span>
-        )
-      )}
-    </nav>
+        </div>
+        <ThemeToggle />
+      </div>
+      <nav className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2">
+        {TABS.map((tab) =>
+          tab.href ? (
+            <Link
+              key={tab.label}
+              href={tab.href}
+              className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium ${
+                pathname === tab.href
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+            </Link>
+          ) : (
+            <span
+              key={tab.label}
+              title="Bientôt disponible"
+              className="shrink-0 cursor-not-allowed whitespace-nowrap rounded-md px-3 py-2 text-sm text-faint-foreground"
+            >
+              {tab.label}
+            </span>
+          )
+        )}
+      </nav>
+    </header>
   );
 }

@@ -73,8 +73,8 @@ export function WidgetCaDuJour() {
         <WidgetLoading />
       ) : (
         <div>
-          <p className="text-2xl font-medium text-zinc-900">{formatEuros(data.ca)}</p>
-          <p className="text-xs text-zinc-500">
+          <p className="text-2xl font-medium text-foreground">{formatEuros(data.ca)}</p>
+          <p className="text-xs text-muted-foreground">
             {data.freq} client{data.freq > 1 ? "s" : ""}
             {data.caHier > 0 &&
               ` · hier : ${formatEuros(data.caHier)}`}
@@ -166,8 +166,8 @@ export function WidgetEquipePresente() {
                 className="h-2 w-2 shrink-0 rounded-full"
                 style={{ backgroundColor: p.couleur }}
               />
-              <span className="text-zinc-900">{p.nom}</span>
-              <span className="text-zinc-400">
+              <span className="text-foreground">{p.nom}</span>
+              <span className="text-faint-foreground">
                 {p.heure_debut.slice(0, 5)}–{p.heure_fin.slice(0, 5)}
               </span>
             </li>
@@ -217,13 +217,13 @@ export function WidgetProgressionTaches() {
         <WidgetEmpty text="Aucune tâche aujourd'hui." />
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-border/30">
             <div
-              className="h-full rounded-full bg-zinc-900"
+              className={`h-full rounded-full ${data.faites === data.total ? "bg-gold" : "bg-accent"}`}
               style={{ width: `${Math.round((data.faites / data.total) * 100)}%` }}
             />
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             {data.faites}/{data.total} tâches faites
           </p>
         </div>
@@ -277,7 +277,7 @@ export function WidgetCongesEnAttente() {
       ) : demandes.length === 0 ? (
         <WidgetEmpty text="Aucune demande en attente." />
       ) : (
-        <ul className="flex flex-col gap-1 text-xs text-zinc-700">
+        <ul className="flex flex-col gap-1 text-xs text-foreground">
           {demandes.map((d) => (
             <li key={d.id}>{d.nom}</li>
           ))}
@@ -345,12 +345,12 @@ export function WidgetEcheancesProches() {
         <ul className="flex flex-col gap-1.5">
           {echeances.map((e) => (
             <li key={e.id} className="flex items-center justify-between gap-2 text-xs">
-              <span className="text-zinc-900">{e.titre}</span>
+              <span className="text-foreground">{e.titre}</span>
               <span
                 className={
                   e.statut === "en_retard"
-                    ? "font-medium text-red-600"
-                    : "text-zinc-400"
+                    ? "font-medium text-red-600 dark:text-red-400"
+                    : "text-faint-foreground"
                 }
               >
                 {formatDateCourt(e.date_echeance)}
@@ -411,11 +411,11 @@ export function WidgetNotesFraisEnAttente() {
       ) : notes.length === 0 ? (
         <WidgetEmpty text="Aucune note en attente." />
       ) : (
-        <ul className="flex flex-col gap-1 text-xs text-zinc-700">
+        <ul className="flex flex-col gap-1 text-xs text-foreground">
           {notes.map((n) => (
             <li key={n.id} className="flex items-center justify-between gap-2">
               <span>{n.nom}</span>
-              <span className="text-zinc-400">{formatEuros(n.montant)}</span>
+              <span className="text-faint-foreground">{formatEuros(n.montant)}</span>
             </li>
           ))}
         </ul>
@@ -465,7 +465,7 @@ export function WidgetTotalFacturesMois() {
       {total === null ? (
         <WidgetLoading />
       ) : (
-        <p className="text-2xl font-medium text-zinc-900">{formatEuros(total)} TTC</p>
+        <p className="text-2xl font-medium text-foreground">{formatEuros(total)} TTC</p>
       )}
     </WidgetCard>
   );
@@ -526,13 +526,13 @@ export function WidgetProgressionOnboardingEquipe() {
         <WidgetEmpty text="Aucun module ou aucun salarié pour l'instant." />
       ) : (
         <div className="flex flex-col gap-1.5">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-100">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-border/30">
             <div
-              className="h-full rounded-full bg-zinc-900"
+              className={`h-full rounded-full ${data.complete === data.total ? "bg-gold" : "bg-accent"}`}
               style={{ width: `${Math.round((data.complete / data.total) * 100)}%` }}
             />
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             {data.complete}/{data.total} modules complétés au total
           </p>
         </div>

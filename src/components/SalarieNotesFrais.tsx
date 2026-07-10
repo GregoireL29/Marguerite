@@ -16,10 +16,10 @@ const STATUT_LABEL: Record<Statut, string> = {
 };
 
 const STATUT_STYLE: Record<Statut, string> = {
-  en_attente: "bg-zinc-100 text-zinc-600",
-  validee: "bg-green-100 text-green-700",
+  en_attente: "bg-border/30 text-muted-foreground",
+  validee: "bg-green-100 text-green-700 dark:text-green-400",
   refusee: "bg-red-100 text-red-700",
-  remboursee: "bg-zinc-900 text-white",
+  remboursee: "bg-accent text-accent-foreground",
 };
 
 interface NoteFrais {
@@ -125,19 +125,19 @@ export function SalarieNotesFrais() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Notes de frais</h1>
+      <h1 className="text-xl font-medium text-foreground">Notes de frais</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4"
+        className="flex flex-col gap-4 rounded-lg border border-border p-4"
       >
-        <p className="text-sm font-medium text-zinc-900">Nouvelle note de frais</p>
+        <p className="text-sm font-medium text-foreground">Nouvelle note de frais</p>
 
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="montant" className="text-sm text-zinc-600">
+            <label htmlFor="montant" className="text-sm text-muted-foreground">
               Montant (€)
             </label>
             <input
@@ -148,18 +148,18 @@ export function SalarieNotesFrais() {
               required
               value={montant}
               onChange={(e) => setMontant(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="categorie" className="text-sm text-zinc-600">
+            <label htmlFor="categorie" className="text-sm text-muted-foreground">
               Catégorie
             </label>
             <select
               id="categorie"
               value={categorie}
               onChange={(e) => setCategorie(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               {CATEGORIES.map((c) => (
                 <option key={c} value={c}>
@@ -171,7 +171,7 @@ export function SalarieNotesFrais() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="descriptif" className="text-sm text-zinc-600">
+          <label htmlFor="descriptif" className="text-sm text-muted-foreground">
             Descriptif
           </label>
           <textarea
@@ -181,12 +181,12 @@ export function SalarieNotesFrais() {
             value={descriptif}
             onChange={(e) => setDescriptif(e.target.value)}
             placeholder="ex. Repas client du 12/07"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="ticket-file" className="text-sm text-zinc-600">
+          <label htmlFor="ticket-file" className="text-sm text-muted-foreground">
             Photo du ticket
           </label>
           <input
@@ -196,35 +196,35 @@ export function SalarieNotesFrais() {
             accept="image/*,.pdf"
             required
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-            className="text-sm text-zinc-600"
+            className="text-sm text-muted-foreground"
           />
         </div>
 
         <button
           type="submit"
           disabled={saving || !file}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Envoi..." : "Envoyer la note de frais"}
         </button>
       </form>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-zinc-900">Historique</h2>
+        <h2 className="text-sm font-medium text-foreground">Historique</h2>
         {loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : notes.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucune note de frais pour l&apos;instant.</p>
+          <p className="text-sm text-faint-foreground">Aucune note de frais pour l&apos;instant.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200">
+          <ul className="flex flex-col divide-y divide-border">
             {notes.map((n) => (
               <li key={n.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm text-zinc-900">
+                  <p className="text-sm text-foreground">
                     {n.categorie} — {Number(n.montant).toFixed(2)} €
                   </p>
-                  <p className="text-xs text-zinc-500">{n.descriptif}</p>
-                  <p className="text-xs text-zinc-400">{formatDate(n.created_at)}</p>
+                  <p className="text-xs text-muted-foreground">{n.descriptif}</p>
+                  <p className="text-xs text-faint-foreground">{formatDate(n.created_at)}</p>
                 </div>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUT_STYLE[n.statut]}`}

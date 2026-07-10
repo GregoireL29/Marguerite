@@ -234,30 +234,30 @@ export default function EquipePage() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
         <div>
-          <Link href="/planning" className="text-sm text-zinc-500 hover:underline">
+          <Link href="/planning" className="text-sm text-muted-foreground hover:underline">
             &larr; Planning
           </Link>
-          <h1 className="mt-1 text-xl font-medium text-zinc-900">Équipe</h1>
+          <h1 className="mt-1 text-xl font-medium text-foreground">Équipe</h1>
         </div>
         {mode === "list" && (
           <button
             onClick={startCreate}
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
+            className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
           >
             + Ajouter un salarié
           </button>
         )}
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {mode === "list" &&
         (loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : salaries.length === 0 ? (
-          <p className="text-sm text-zinc-500">Aucun salarié pour l&apos;instant.</p>
+          <p className="text-sm text-muted-foreground">Aucun salarié pour l&apos;instant.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200">
+          <ul className="flex flex-col divide-y divide-border">
             {salaries.map((s) => (
               <li
                 key={s.id}
@@ -269,15 +269,15 @@ export default function EquipePage() {
                     style={{ backgroundColor: s.couleur }}
                   />
                   <div>
-                    <p className="text-sm font-medium text-zinc-900">
+                    <p className="text-sm font-medium text-foreground">
                       {s.nom}
                     </p>
-                    <p className="text-xs text-zinc-500">{s.email}</p>
+                    <p className="text-xs text-muted-foreground">{s.email}</p>
                   </div>
                 </div>
                 <button
                   onClick={() => startEdit(s)}
-                  className="text-sm text-zinc-600 hover:underline"
+                  className="text-sm text-muted-foreground hover:underline"
                 >
                   Modifier
                 </button>
@@ -289,7 +289,7 @@ export default function EquipePage() {
       {mode === "form" && (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label htmlFor="nom" className="text-sm text-zinc-600">
+            <label htmlFor="nom" className="text-sm text-muted-foreground">
               Nom
             </label>
             <input
@@ -299,12 +299,12 @@ export default function EquipePage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, nom: e.target.value }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="email" className="text-sm text-zinc-600">
+            <label htmlFor="email" className="text-sm text-muted-foreground">
               Email
             </label>
             <input
@@ -315,12 +315,12 @@ export default function EquipePage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, email: e.target.value }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="couleur" className="text-sm text-zinc-600">
+            <label htmlFor="couleur" className="text-sm text-muted-foreground">
               Couleur
             </label>
             <input
@@ -330,12 +330,12 @@ export default function EquipePage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, couleur: e.target.value }))
               }
-              className="h-10 w-16 rounded-md border border-zinc-300"
+              className="h-10 w-16 rounded-md border border-border"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="type_contrat" className="text-sm text-zinc-600">
+            <label htmlFor="type_contrat" className="text-sm text-muted-foreground">
               Type de contrat
             </label>
             <select
@@ -344,7 +344,7 @@ export default function EquipePage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, type_contrat: e.target.value }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               {TYPES_CONTRAT.map((t) => (
                 <option key={t.value} value={t.value}>
@@ -355,7 +355,7 @@ export default function EquipePage() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="heures_hebdo" className="text-sm text-zinc-600">
+            <label htmlFor="heures_hebdo" className="text-sm text-muted-foreground">
               Heures hebdo
             </label>
             <input
@@ -368,14 +368,14 @@ export default function EquipePage() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, heures_hebdo: e.target.value }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <label
               htmlFor="solde_conges_jours"
-              className="text-sm text-zinc-600"
+              className="text-sm text-muted-foreground"
             >
               Solde de congés (jours, optionnel)
             </label>
@@ -391,12 +391,12 @@ export default function EquipePage() {
                   solde_conges_jours: e.target.value,
                 }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-2">
-            <span className="text-sm text-zinc-600">
+            <span className="text-sm text-muted-foreground">
               Jours de repos fixes
             </span>
             <div className="flex flex-wrap gap-2">
@@ -405,8 +405,8 @@ export default function EquipePage() {
                   key={j.value}
                   className={`cursor-pointer rounded-md border px-3 py-1.5 text-sm ${
                     form.jours_repos_fixes.includes(j.value)
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-300 text-zinc-600"
+                      ? "border-accent bg-accent text-accent-foreground"
+                      : "border-border text-muted-foreground"
                   }`}
                 >
                   <input
@@ -425,14 +425,14 @@ export default function EquipePage() {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
             >
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
             <button
               type="button"
               onClick={() => setMode("list")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700"
+              className="rounded-md border border-border px-3 py-2 text-sm text-foreground"
             >
               Annuler
             </button>

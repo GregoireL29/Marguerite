@@ -388,10 +388,10 @@ export function ManagerIndicateurs() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-medium text-zinc-900">Indicateurs</h1>
+        <h1 className="text-xl font-medium text-foreground">Indicateurs</h1>
         <Link
           href="/indicateurs/saisie"
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100"
+          className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40"
         >
           Saisir les ventes du jour
         </Link>
@@ -404,8 +404,8 @@ export function ManagerIndicateurs() {
             onClick={() => setPeriode(p.value)}
             className={`rounded-md px-3 py-1.5 text-sm font-medium ${
               periode === p.value
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-600 hover:bg-zinc-100"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40"
             }`}
           >
             {p.label}
@@ -416,17 +416,17 @@ export function ManagerIndicateurs() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setAnchor((a) => navigateAnchor(periode, a, -1))}
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
           aria-label="Période précédente"
         >
           &lsaquo;
         </button>
-        <span className="text-sm font-medium capitalize text-zinc-900">
+        <span className="text-sm font-medium capitalize text-foreground">
           {formatRangeLabel(periode, start, end)}
         </span>
         <button
           onClick={() => setAnchor((a) => navigateAnchor(periode, a, 1))}
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
           aria-label="Période suivante"
         >
           &rsaquo;
@@ -434,7 +434,7 @@ export function ManagerIndicateurs() {
       </div>
 
       <div className="flex flex-col gap-2">
-        <p className="text-sm text-zinc-600">Comparer à</p>
+        <p className="text-sm text-muted-foreground">Comparer à</p>
         <div className="flex flex-wrap gap-1">
           {COMPARISON_OPTIONS.map((opt) => (
             <button
@@ -443,33 +443,33 @@ export function ManagerIndicateurs() {
               disabled={opt.value === "objectif" && periode === "jour"}
               className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30 ${
                 comparisonMode === opt.value
-                  ? "bg-zinc-900 text-white"
-                  : "text-zinc-600 hover:bg-zinc-100"
+                  ? "bg-accent text-accent-foreground"
+                  : "text-muted-foreground hover:bg-border/40"
               }`}
             >
               {opt.label}
             </button>
           ))}
         </div>
-        <p className="text-xs text-zinc-400">
+        <p className="text-xs text-faint-foreground">
           Comparaison active :{" "}
           {COMPARISON_OPTIONS.find((o) => o.value === comparisonMode)?.label}
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : (
         <>
           <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-md border border-zinc-200 p-4">
-              <p className="text-xs text-zinc-500">Chiffre d&apos;affaires</p>
-              <p className="text-2xl font-medium text-zinc-900">
+            <div className="rounded-md border border-border p-4">
+              <p className="text-xs text-muted-foreground">Chiffre d&apos;affaires</p>
+              <p className="text-2xl font-medium text-foreground">
                 {formatEuros(caCurrent)}
               </p>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-faint-foreground">
                 {isObjectifMode
                   ? objectif
                     ? `Objectif : ${formatEuros(objectif.ca_cible)} (${caPctAtteint}% atteint)`
@@ -477,7 +477,7 @@ export function ManagerIndicateurs() {
                   : `vs ${referenceShortLabel} : ${formatPct(caPct)}`}
               </p>
               {!isObjectifMode && objectif && (
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Objectif : {formatEuros(objectif.ca_cible)} (
                   {objectif.ca_cible > 0
                     ? Math.round((caCurrent / objectif.ca_cible) * 100)
@@ -486,14 +486,14 @@ export function ManagerIndicateurs() {
                 </p>
               )}
             </div>
-            <div className="rounded-md border border-zinc-200 p-4">
-              <p className="text-xs text-zinc-500">Panier moyen</p>
-              <p className="text-2xl font-medium text-zinc-900">
+            <div className="rounded-md border border-border p-4">
+              <p className="text-xs text-muted-foreground">Panier moyen</p>
+              <p className="text-2xl font-medium text-foreground">
                 {panierCurrent !== null
                   ? formatEuros(panierCurrent)
                   : "n/a"}
               </p>
-              <p className="text-xs text-zinc-400">
+              <p className="text-xs text-faint-foreground">
                 {isObjectifMode
                   ? objectif
                     ? `Objectif : ${formatEuros(objectif.panier_moyen_cible)}${
@@ -503,7 +503,7 @@ export function ManagerIndicateurs() {
                   : `vs ${referenceShortLabel} : ${formatPct(panierPct)}`}
               </p>
               {!isObjectifMode && objectif && (
-                <p className="mt-1 text-xs text-zinc-500">
+                <p className="mt-1 text-xs text-muted-foreground">
                   Objectif : {formatEuros(objectif.panier_moyen_cible)}
                   {panierCurrent !== null &&
                     objectif.panier_moyen_cible > 0 &&
@@ -515,27 +515,27 @@ export function ManagerIndicateurs() {
             </div>
           </div>
 
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             Fréquentation : {freqCurrent} client
             {freqCurrent > 1 ? "s" : ""}
             {!isObjectifMode && ` (${formatPct(freqPct)} vs ${referenceShortLabel})`}
           </p>
 
-          <div className="rounded-md bg-zinc-50 p-4">
-            <p className="text-sm text-zinc-800">{diagnostic}</p>
+          <div className="rounded-md bg-card p-4">
+            <p className="text-sm text-foreground">{diagnostic}</p>
           </div>
 
           {periode !== "jour" && (
             <form
               onSubmit={handleSaveObjectif}
-              className="flex flex-col gap-3 rounded-md border border-zinc-200 p-4"
+              className="flex flex-col gap-3 rounded-md border border-border p-4"
             >
-              <p className="text-sm font-medium text-zinc-900">
+              <p className="text-sm font-medium text-foreground">
                 Objectif pour cette période
               </p>
               <div className="flex gap-3">
                 <div className="flex flex-1 flex-col gap-1">
-                  <label htmlFor="ca_cible" className="text-sm text-zinc-600">
+                  <label htmlFor="ca_cible" className="text-sm text-muted-foreground">
                     CA cible (€)
                   </label>
                   <input
@@ -546,13 +546,13 @@ export function ManagerIndicateurs() {
                     required
                     value={caCible}
                     onChange={(e) => setCaCible(e.target.value)}
-                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                    className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                   />
                 </div>
                 <div className="flex flex-1 flex-col gap-1">
                   <label
                     htmlFor="panier_cible"
-                    className="text-sm text-zinc-600"
+                    className="text-sm text-muted-foreground"
                   >
                     Panier moyen cible (€)
                   </label>
@@ -564,14 +564,14 @@ export function ManagerIndicateurs() {
                     required
                     value={panierCible}
                     onChange={(e) => setPanierCible(e.target.value)}
-                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                    className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                   />
                 </div>
               </div>
               <button
                 type="submit"
                 disabled={saving}
-                className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
                 {saving
                   ? "Enregistrement..."

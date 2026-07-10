@@ -91,21 +91,21 @@ export default function SaisieVentesPage() {
       <div>
         <Link
           href="/indicateurs"
-          className="text-sm text-zinc-500 hover:underline"
+          className="text-sm text-muted-foreground hover:underline"
         >
           &larr; Indicateurs
         </Link>
-        <h1 className="mt-1 text-xl font-medium text-zinc-900">
+        <h1 className="mt-1 text-xl font-medium text-foreground">
           Saisie des ventes du jour
         </h1>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      {saved && <p className="text-sm text-green-600">Enregistré.</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {saved && <p className="text-sm text-green-600 dark:text-green-400">Enregistré.</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <label htmlFor="date" className="text-sm text-zinc-600">
+          <label htmlFor="date" className="text-sm text-muted-foreground">
             Date
           </label>
           <input
@@ -114,14 +114,14 @@ export default function SaisieVentesPage() {
             required
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
           <label
             htmlFor="chiffre_affaires"
-            className="text-sm text-zinc-600"
+            className="text-sm text-muted-foreground"
           >
             Chiffre d&apos;affaires (€)
           </label>
@@ -134,12 +134,12 @@ export default function SaisieVentesPage() {
             disabled={loading}
             value={chiffreAffaires}
             onChange={(e) => setChiffreAffaires(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="frequentation" className="text-sm text-zinc-600">
+          <label htmlFor="frequentation" className="text-sm text-muted-foreground">
             Fréquentation (nombre de clients)
           </label>
           <input
@@ -151,14 +151,14 @@ export default function SaisieVentesPage() {
             disabled={loading}
             value={frequentation}
             onChange={(e) => setFrequentation(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 disabled:opacity-50"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
           />
         </div>
 
         <button
           type="submit"
           disabled={saving || loading}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Enregistrement..." : "Enregistrer"}
         </button>

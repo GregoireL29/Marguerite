@@ -686,28 +686,28 @@ function ManagerPlanning() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => setWeekStart((w) => addDays(w, -7))}
-            className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
             aria-label="Semaine précédente"
           >
             &lsaquo;
           </button>
-          <h1 className="text-lg font-medium text-zinc-900">
+          <h1 className="text-lg font-medium text-foreground">
             Semaine du {formatDateLong(weekStart)}
           </h1>
           <button
             onClick={() => setWeekStart((w) => addDays(w, 7))}
-            className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
             aria-label="Semaine suivante"
           >
             &rsaquo;
           </button>
           {planningStatut === "genere_ia" && (
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600">
+            <span className="rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               Généré par IA
             </span>
           )}
           {planningStatut === "publie" && (
-            <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[11px] font-medium text-zinc-600">
+            <span className="rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
               Publié
             </span>
           )}
@@ -716,20 +716,20 @@ function ManagerPlanning() {
           <button
             onClick={handleGenerate}
             disabled={generating || loading || mode === "form"}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-100 disabled:opacity-50"
+            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40 disabled:opacity-50"
           >
             {generating ? "Génération..." : "Générer le planning"}
           </button>
-          <Link href="/equipe" className="text-sm text-zinc-600 hover:underline">
+          <Link href="/equipe" className="text-sm text-muted-foreground hover:underline">
             Gérer l&apos;équipe
           </Link>
-          <Link href="/boutique" className="text-sm text-zinc-600 hover:underline">
+          <Link href="/boutique" className="text-sm text-muted-foreground hover:underline">
             Ma boutique
           </Link>
         </div>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {mode === "grid" && (
         <div className="flex gap-1">
@@ -737,8 +737,8 @@ function ManagerPlanning() {
             onClick={() => setViewMode("semaine")}
             className={`rounded-md px-3 py-2 text-sm font-medium ${
               viewMode === "semaine"
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-600 hover:bg-zinc-100"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40"
             }`}
           >
             Semaine
@@ -747,8 +747,8 @@ function ManagerPlanning() {
             onClick={() => setViewMode("jour")}
             className={`rounded-md px-3 py-2 text-sm font-medium ${
               viewMode === "jour"
-                ? "bg-zinc-900 text-white"
-                : "text-zinc-600 hover:bg-zinc-100"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40"
             }`}
           >
             Jour
@@ -758,7 +758,7 @@ function ManagerPlanning() {
 
       {mode === "grid" && viewMode === "jour" &&
         (loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flex gap-1">
@@ -768,8 +768,8 @@ function ManagerPlanning() {
                   onClick={() => setSelectedDayOffset(offset)}
                   className={`rounded-md px-3 py-2 text-sm font-medium ${
                     selectedDayOffset === offset
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-600 hover:bg-zinc-100"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-muted-foreground hover:bg-border/40"
                   }`}
                 >
                   {label.slice(0, 3)}
@@ -795,8 +795,8 @@ function ManagerPlanning() {
               return (
                 <div className="flex flex-col gap-3">
                   <div>
-                    <p className="text-sm font-medium text-zinc-900">{label}</p>
-                    <p className="text-xs text-zinc-400">{formatDateShort(date)}</p>
+                    <p className="text-sm font-medium text-foreground">{label}</p>
+                    <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
                   </div>
 
                   {buckets.length > 0 && (
@@ -819,14 +819,14 @@ function ManagerPlanning() {
                   )}
 
                   {hasGap && (
-                    <p className="text-xs font-medium text-red-600">
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400">
                       Sous-effectif
                     </p>
                   )}
 
                   <div className="flex max-w-md flex-col gap-2">
                     {dayCreneaux.length === 0 ? (
-                      <p className="text-sm text-zinc-400">
+                      <p className="text-sm text-faint-foreground">
                         Aucun créneau ce jour-là.
                       </p>
                     ) : (
@@ -849,7 +849,7 @@ function ManagerPlanning() {
 
                   <button
                     onClick={() => startCreate(offset)}
-                    className="self-start text-sm text-zinc-400 hover:text-zinc-700"
+                    className="self-start text-sm text-faint-foreground hover:text-foreground"
                   >
                     + Ajouter
                   </button>
@@ -861,7 +861,7 @@ function ManagerPlanning() {
 
       {mode === "grid" && viewMode === "semaine" &&
         (loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
           <div className="flex gap-3 overflow-x-auto pb-2">
             {JOURS.map(({ key, label, offset }) => {
@@ -881,10 +881,10 @@ function ManagerPlanning() {
               return (
                 <div key={key} className="flex w-40 shrink-0 flex-col gap-2">
                   <div>
-                    <p className="text-xs font-medium text-zinc-900">
+                    <p className="text-xs font-medium text-foreground">
                       {label}
                     </p>
-                    <p className="text-[11px] text-zinc-400">
+                    <p className="text-[11px] text-faint-foreground">
                       {formatDateShort(date)}
                     </p>
                   </div>
@@ -909,7 +909,7 @@ function ManagerPlanning() {
                   )}
 
                   {hasGap && (
-                    <p className="text-[10px] font-medium text-red-600">
+                    <p className="text-[10px] font-medium text-red-600 dark:text-red-400">
                       Sous-effectif
                     </p>
                   )}
@@ -934,7 +934,7 @@ function ManagerPlanning() {
 
                   <button
                     onClick={() => startCreate(offset)}
-                    className="text-[11px] text-zinc-400 hover:text-zinc-700"
+                    className="text-[11px] text-faint-foreground hover:text-foreground"
                   >
                     + Ajouter
                   </button>
@@ -947,7 +947,7 @@ function ManagerPlanning() {
       {mode === "form" && (
         <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-4">
           <div className="flex flex-col gap-1">
-            <label htmlFor="jour" className="text-sm text-zinc-600">
+            <label htmlFor="jour" className="text-sm text-muted-foreground">
               Jour
             </label>
             <select
@@ -956,7 +956,7 @@ function ManagerPlanning() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, jourOffset: Number(e.target.value) }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               {JOURS.map((j) => (
                 <option key={j.key} value={j.offset}>
@@ -967,7 +967,7 @@ function ManagerPlanning() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="utilisateur_id" className="text-sm text-zinc-600">
+            <label htmlFor="utilisateur_id" className="text-sm text-muted-foreground">
               Salarié
             </label>
             <select
@@ -977,7 +977,7 @@ function ManagerPlanning() {
               onChange={(e) =>
                 setForm((f) => ({ ...f, utilisateur_id: e.target.value }))
               }
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               <option value="" disabled>
                 Choisir un salarié
@@ -992,7 +992,7 @@ function ManagerPlanning() {
 
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="heure_debut" className="text-sm text-zinc-600">
+              <label htmlFor="heure_debut" className="text-sm text-muted-foreground">
                 Début
               </label>
               <input
@@ -1003,11 +1003,11 @@ function ManagerPlanning() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, heure_debut: e.target.value }))
                 }
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="heure_fin" className="text-sm text-zinc-600">
+              <label htmlFor="heure_fin" className="text-sm text-muted-foreground">
                 Fin
               </label>
               <input
@@ -1018,25 +1018,25 @@ function ManagerPlanning() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, heure_fin: e.target.value }))
                 }
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
           <div className="flex gap-3">
             <button
               type="submit"
               disabled={saving}
-              className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
             >
               {saving ? "Enregistrement..." : "Enregistrer"}
             </button>
             <button
               type="button"
               onClick={() => setMode("grid")}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700"
+              className="rounded-md border border-border px-3 py-2 text-sm text-foreground"
             >
               Annuler
             </button>

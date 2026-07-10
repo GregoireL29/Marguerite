@@ -20,8 +20,8 @@ const STATUT_LABEL: Record<DemandeRow["statut"], string> = {
 };
 
 const STATUT_STYLE: Record<DemandeRow["statut"], string> = {
-  en_attente: "bg-zinc-100 text-zinc-600",
-  validee: "bg-green-100 text-green-700",
+  en_attente: "bg-border/30 text-muted-foreground",
+  validee: "bg-green-100 text-green-700 dark:text-green-400",
   refusee: "bg-red-100 text-red-700",
 };
 
@@ -143,21 +143,21 @@ export function SalarieConges() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Congés</h1>
+      <h1 className="text-xl font-medium text-foreground">Congés</h1>
 
       {soldeConges !== null && (
-        <p className="text-sm text-zinc-600">
+        <p className="text-sm text-muted-foreground">
           Solde restant :{" "}
-          <span className="font-medium text-zinc-900">{soldeConges} jours</span>
+          <span className="font-medium text-foreground">{soldeConges} jours</span>
         </p>
       )}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="date_debut" className="text-sm text-zinc-600">
+            <label htmlFor="date_debut" className="text-sm text-muted-foreground">
               Du
             </label>
             <input
@@ -166,11 +166,11 @@ export function SalarieConges() {
               required
               value={dateDebut}
               onChange={(e) => setDateDebut(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="date_fin" className="text-sm text-zinc-600">
+            <label htmlFor="date_fin" className="text-sm text-muted-foreground">
               Au
             </label>
             <input
@@ -179,13 +179,13 @@ export function SalarieConges() {
               required
               value={dateFin}
               onChange={(e) => setDateFin(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="message" className="text-sm text-zinc-600">
+          <label htmlFor="message" className="text-sm text-muted-foreground">
             Message (optionnel)
           </label>
           <textarea
@@ -193,35 +193,35 @@ export function SalarieConges() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <button
           type="submit"
           disabled={saving}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Envoi..." : "Envoyer la demande"}
         </button>
       </form>
 
       <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium text-zinc-900">Historique</h2>
+        <h2 className="text-sm font-medium text-foreground">Historique</h2>
         {loading ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : demandes.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucune demande pour l&apos;instant.</p>
+          <p className="text-sm text-faint-foreground">Aucune demande pour l&apos;instant.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200">
+          <ul className="flex flex-col divide-y divide-border">
             {demandes.map((d) => (
               <li key={d.id} className="flex items-center justify-between py-3">
                 <div>
-                  <p className="text-sm text-zinc-900">
+                  <p className="text-sm text-foreground">
                     {formatDate(d.date_debut)} – {formatDate(d.date_fin)}
                   </p>
                   {d.message && (
-                    <p className="text-xs text-zinc-500">{d.message}</p>
+                    <p className="text-xs text-muted-foreground">{d.message}</p>
                   )}
                 </div>
                 <span
