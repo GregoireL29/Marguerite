@@ -54,3 +54,28 @@ body {
     background-color 0.15s ease,
     color 0.15s ease;
 }
+
+@keyframes marguerite-draw-petal {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes marguerite-fill-petal {
+  to {
+    fill-opacity: 1;
+  }
+}
+
+@keyframes marguerite-pop-center {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes marguerite-fade-in {
+  to {
+    opacity: 1;
+  }
+}
