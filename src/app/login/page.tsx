@@ -162,7 +162,7 @@ export default function LoginPage() {
                   : "border-border text-foreground hover:bg-border/40"
               }`}
             >
-              Créer mon profil
+              Créer une nouvelle entreprise
             </button>
             <button
               type="button"
@@ -180,7 +180,10 @@ export default function LoginPage() {
           {panel === "creer-profil" && (
             <form onSubmit={handleSignup} className="mt-4 flex flex-col gap-3 rounded-lg border border-border p-4">
               <p className="text-sm text-muted-foreground">
-                Créez votre compte, puis configurez votre structure et votre première boutique dans la foulée.
+                Créez votre compte, puis configurez votre structure et votre première boutique dans la foulée. Cette option sert uniquement à démarrer une toute nouvelle entreprise sur Marguerite.
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vous rejoignez une équipe déjà présente sur Marguerite ? Utilisez plutôt le lien d&apos;invitation envoyé par votre manager.
               </p>
 
               <div className="flex flex-col gap-1">
@@ -224,7 +227,7 @@ export default function LoginPage() {
                 disabled={signupLoading}
                 className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
-                {signupLoading ? "Création..." : "Créer mon profil"}
+                {signupLoading ? "Création..." : "Créer mon entreprise"}
               </button>
             </form>
           )}

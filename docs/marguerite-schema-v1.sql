@@ -576,3 +576,80 @@ create policy "documents_acces_par_boutique" on storage.objects
   for all to authenticated
   using (bucket_id = 'documents' and user_has_access_to_boutique((storage.foldername(name))[1]::uuid))
   with check (bucket_id = 'documents' and user_has_access_to_boutique((storage.foldername(name))[1]::uuid));
+
+-- Invitation des salariés : le manager crée la ligne utilisateurs à
+-- l'avance (sans auth_id) via "Gérer l'équipe", puis génère un lien à
+-- usage unique qui permet au salarié de créer son propre compte Supabase
+-- Auth et de se relier à cette ligne existante, sans passer par l'écran
+-- "créer une nouvelle structure".
+
+alter table utilisateurs
+  add column invite_token uuid unique,
+  add column invite_expires_at timestamptz;
+
+-- Détails publics d'une invitation (accessible sans authentification, pour
+-- affichage avant inscription). Ne renvoie rien si le token est
+-- invalide, expiré, ou déjà utilisé (auth_id déjà renseigné) : on ne
+-- fuite jamais l'ensemble des invitations en attente, seulement celle
+-- correspondant exactement au token fourni.
+create or replace function get_invite_details(p_token uuid)
+returns table(nom text, email text, structure_nom text, boutique_nom text)
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select u.nom, u.email, s.nom, b.nom
+  from utilisateurs u
+  join structures s on s.id = u.structure_id
+  left join boutiques b on b.id = u.boutique_id
+  where u.invite_token = p_token
+    and u.invite_expires_at > now()
+    and u.auth_id is null;
+$$;
+
+revoke all on function get_invite_details(uuid) from public;
+grant execute on function get_invite_details(uuid) to anon, authenticated;
+
+-- Relie le compte actuellement authentifié (auth.uid()) à la ligne
+-- utilisateurs correspondant au token, si celui-ci est valide, non expiré
+-- et pas déjà utilisé. La contrainte unique sur auth_id empêche par
+-- construction qu'un compte déjà relié à un autre profil ne s'approprie
+-- une seconde ligne. Échoue (exception) plutôt que de renvoyer une ligne
+-- partielle en cas de token invalide/expiré/déjà utilisé.
+create or replace function claim_invite(p_token uuid)
+returns table(structure_id uuid, boutique_id uuid, role role_utilisateur)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_id uuid;
+  v_structure_id uuid;
+  v_boutique_id uuid;
+  v_role role_utilisateur;
+begin
+  select u.id, u.structure_id, u.boutique_id, u.role
+    into v_id, v_structure_id, v_boutique_id, v_role
+  from utilisateurs u
+  where u.invite_token = p_token
+    and u.invite_expires_at > now()
+    and u.auth_id is null
+  limit 1;
+
+  if v_id is null then
+    raise exception 'invitation_invalide';
+  end if;
+
+  update utilisateurs
+    set auth_id = auth.uid(),
+        invite_token = null,
+        invite_expires_at = null
+    where id = v_id;
+
+  return query select v_structure_id, v_boutique_id, v_role;
+end;
+$$;
+
+revoke all on function claim_invite(uuid) from public;
+grant execute on function claim_invite(uuid) to authenticated;

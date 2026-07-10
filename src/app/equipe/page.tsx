@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { useUserProfile } from "@/components/AppShell";
 
 type JourRepos = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
 
@@ -38,6 +39,9 @@ interface Salarie {
   nom: string;
   email: string;
   couleur: string;
+  auth_id: string | null;
+  invite_token: string | null;
+  invite_expires_at: string | null;
   profils_salarie: ProfilSalarie[];
 }
 
@@ -62,6 +66,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function EquipePage() {
+  const profile = useUserProfile();
   const [salaries, setSalaries] = useState<Salarie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,12 +74,17 @@ export default function EquipePage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [invitingId, setInvitingId] = useState<string | null>(null);
+  const [inviteLinks, setInviteLinks] = useState<Record<string, string>>({});
+  const [inviteError, setInviteError] = useState<string | null>(null);
 
   const loadSalaries = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("utilisateurs")
-      .select("id, nom, email, couleur, profils_salarie(*)")
+      .select(
+        "id, nom, email, couleur, auth_id, invite_token, invite_expires_at, profils_salarie(*)"
+      )
       .order("nom");
 
     if (error) {
@@ -123,6 +133,43 @@ export default function EquipePage() {
         ? f.jours_repos_fixes.filter((j) => j !== jour)
         : [...f.jours_repos_fixes, jour],
     }));
+  }
+
+  async function handleInvite(salarie: Salarie) {
+    if (!profile) return;
+    setInvitingId(salarie.id);
+    setInviteError(null);
+
+    const token = crypto.randomUUID();
+    const expiresAt = new Date(
+      Date.now() + 7 * 24 * 60 * 60 * 1000
+    ).toISOString();
+
+    const { error: updateError } = await supabase
+      .from("utilisateurs")
+      .update({
+        invite_token: token,
+        invite_expires_at: expiresAt,
+        boutique_id: profile.boutique_id,
+      })
+      .eq("id", salarie.id);
+
+    setInvitingId(null);
+
+    if (updateError) {
+      setInviteError(updateError.message);
+      return;
+    }
+
+    setInviteLinks((links) => ({
+      ...links,
+      [salarie.id]: `${window.location.origin}/rejoindre/${token}`,
+    }));
+    await loadSalaries();
+  }
+
+  async function handleCopyLink(link: string) {
+    await navigator.clipboard.writeText(link);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -250,6 +297,9 @@ export default function EquipePage() {
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {inviteError && (
+        <p className="text-sm text-red-600 dark:text-red-400">{inviteError}</p>
+      )}
 
       {mode === "list" &&
         (loading ? (
@@ -258,31 +308,72 @@ export default function EquipePage() {
           <p className="text-sm text-muted-foreground">Aucun salarié pour l&apos;instant.</p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
-            {salaries.map((s) => (
-              <li
-                key={s.id}
-                className="flex items-center justify-between py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span
-                    className="h-3 w-3 shrink-0 rounded-full"
-                    style={{ backgroundColor: s.couleur }}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {s.nom}
-                    </p>
-                    <p className="text-xs text-muted-foreground">{s.email}</p>
+            {salaries.map((s) => {
+              const isExpired =
+                s.invite_expires_at != null &&
+                new Date(s.invite_expires_at) < new Date();
+              const hasPendingInvite =
+                !s.auth_id && s.invite_token != null && !isExpired;
+              const link =
+                inviteLinks[s.id] ??
+                (hasPendingInvite && typeof window !== "undefined"
+                  ? `${window.location.origin}/rejoindre/${s.invite_token}`
+                  : null);
+
+              return (
+                <li key={s.id} className="flex flex-col gap-2 py-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="h-3 w-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: s.couleur }}
+                      />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">
+                          {s.nom}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{s.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-3">
+                      {!s.auth_id && (
+                        <button
+                          onClick={() => handleInvite(s)}
+                          disabled={invitingId === s.id}
+                          className="text-sm text-accent hover:underline disabled:opacity-50"
+                        >
+                          {invitingId === s.id
+                            ? "Envoi..."
+                            : hasPendingInvite
+                              ? "Renvoyer"
+                              : "Inviter"}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => startEdit(s)}
+                        className="text-sm text-muted-foreground hover:underline"
+                      >
+                        Modifier
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <button
-                  onClick={() => startEdit(s)}
-                  className="text-sm text-muted-foreground hover:underline"
-                >
-                  Modifier
-                </button>
-              </li>
-            ))}
+
+                  {!s.auth_id && link && (
+                    <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2">
+                      <p className="flex-1 truncate text-xs text-muted-foreground">
+                        {link}
+                      </p>
+                      <button
+                        onClick={() => handleCopyLink(link)}
+                        className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-border/40"
+                      >
+                        Copier
+                      </button>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         ))}
 
