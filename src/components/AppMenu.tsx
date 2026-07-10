@@ -17,7 +17,7 @@ const TABS: { label: string; href?: string }[] = [
   { label: "Annonces", href: "/annonces" },
   { label: "Onboarding", href: "/onboarding" },
   { label: "Rappels et échéances", href: "/echeances" },
-  { label: "Messagerie" },
+  { label: "Messagerie", href: "/messagerie" },
 ];
 
 export function AppMenu() {

@@ -295,6 +295,32 @@ create table echeances (
 
 create index idx_echeances_boutique on echeances(boutique_id);
 
+create table conversations (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+create index idx_conversations_boutique on conversations(boutique_id);
+
+create table conversations_participants (
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  primary key (conversation_id, utilisateur_id)
+);
+
+create index idx_conversations_participants_utilisateur on conversations_participants(utilisateur_id);
+
+create table messages (
+  id uuid primary key default uuid_generate_v4(),
+  conversation_id uuid not null references conversations(id) on delete cascade,
+  auteur_id uuid not null references utilisateurs(id) on delete cascade,
+  contenu text not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_messages_conversation on messages(conversation_id, created_at);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -320,6 +346,9 @@ alter table modules_formation enable row level security;
 alter table questions_qcm enable row level security;
 alter table progression_formation enable row level security;
 alter table echeances enable row level security;
+alter table conversations enable row level security;
+alter table conversations_participants enable row level security;
+alter table messages enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -379,6 +408,15 @@ create policy "authenticated_full_access" on progression_formation
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on echeances
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on conversations
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on conversations_participants
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on messages
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
