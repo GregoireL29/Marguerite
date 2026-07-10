@@ -321,6 +321,20 @@ create table messages (
 
 create index idx_messages_conversation on messages(conversation_id, created_at);
 
+-- Table volontairement creuse : une ligne par widget épinglé (pas par
+-- widget disponible). Si un utilisateur n'a aucune ligne, l'écran
+-- d'accueil affiche un jeu de widgets pré-épinglés par défaut.
+create table widgets_epingles (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null references utilisateurs(id) on delete cascade,
+  widget_key text not null,
+  ordre integer not null,
+  created_at timestamptz not null default now(),
+  unique (utilisateur_id, widget_key)
+);
+
+create index idx_widgets_epingles_utilisateur on widgets_epingles(utilisateur_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -349,6 +363,7 @@ alter table echeances enable row level security;
 alter table conversations enable row level security;
 alter table conversations_participants enable row level security;
 alter table messages enable row level security;
+alter table widgets_epingles enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -417,6 +432,9 @@ create policy "authenticated_full_access" on conversations_participants
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on messages
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on widgets_epingles
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,

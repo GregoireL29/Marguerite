@@ -7,7 +7,8 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 
 const TABS: { label: string; href?: string }[] = [
-  { label: "Planning", href: "/" },
+  { label: "Accueil", href: "/" },
+  { label: "Planning", href: "/planning" },
   { label: "Tâches du jour", href: "/taches" },
   { label: "Congés", href: "/conges" },
   { label: "Documents", href: "/documents" },
