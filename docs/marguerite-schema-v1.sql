@@ -336,10 +336,11 @@ create table widgets_epingles (
 create index idx_widgets_epingles_utilisateur on widgets_epingles(utilisateur_id);
 
 -- Row Level Security
--- V1 : une seule structure, pas encore de distinction de droits par rôle.
--- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
--- les tables du module Planning. À affiner quand les rôles (vendeur,
--- manager, gérant) et le multi-structure seront réellement utilisés.
+-- V2 : isolation par structure/boutique. Un manager/salarié n'accède qu'à
+-- sa propre boutique ; un gérant (rôle prévu, pas encore utilisé) accède à
+-- toutes les boutiques de sa structure. Pas encore de distinction de droits
+-- en écriture entre manager et salarié au sein d'une même boutique — ce
+-- sera affiné quand les rôles seront réellement différenciés en usage.
 alter table structures enable row level security;
 alter table boutiques enable row level security;
 alter table utilisateurs enable row level security;
@@ -365,86 +366,213 @@ alter table conversations_participants enable row level security;
 alter table messages enable row level security;
 alter table widgets_epingles enable row level security;
 
-create policy "authenticated_full_access" on structures
-  for all to authenticated using (true) with check (true);
+-- Fonctions d'accès partagées (security definer : bypass RLS en interne
+-- pour éviter toute récursion avec les policies qui les appellent).
 
-create policy "authenticated_full_access" on boutiques
-  for all to authenticated using (true) with check (true);
+create or replace function user_has_access_to_boutique(target_boutique_id uuid)
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from utilisateurs u
+    where u.auth_id = auth.uid()
+      and (
+        u.boutique_id = target_boutique_id
+        or (
+          u.role = 'gerant'
+          and exists (
+            select 1 from boutiques b
+            where b.id = target_boutique_id and b.structure_id = u.structure_id
+          )
+        )
+      )
+  );
+$$;
+revoke all on function user_has_access_to_boutique(uuid) from public;
+grant execute on function user_has_access_to_boutique(uuid) to authenticated;
 
-create policy "authenticated_full_access" on utilisateurs
-  for all to authenticated using (true) with check (true);
+create or replace function user_is_conversation_participant(target_conversation_id uuid)
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from conversations_participants cp
+    join utilisateurs u on u.id = cp.utilisateur_id
+    where cp.conversation_id = target_conversation_id and u.auth_id = auth.uid()
+  );
+$$;
+revoke all on function user_is_conversation_participant(uuid) from public;
+grant execute on function user_is_conversation_participant(uuid) to authenticated;
 
-create policy "authenticated_full_access" on profils_salarie
-  for all to authenticated using (true) with check (true);
+create or replace function user_belongs_to_structure(target_structure_id uuid)
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from utilisateurs u
+    where u.auth_id = auth.uid() and u.structure_id = target_structure_id
+  );
+$$;
+revoke all on function user_belongs_to_structure(uuid) from public;
+grant execute on function user_belongs_to_structure(uuid) to authenticated;
 
-create policy "authenticated_full_access" on plannings
-  for all to authenticated using (true) with check (true);
+create or replace function current_utilisateur_id()
+returns uuid
+language sql security definer set search_path = public stable
+as $$
+  select id from utilisateurs where auth_id = auth.uid();
+$$;
+revoke all on function current_utilisateur_id() from public;
+grant execute on function current_utilisateur_id() to authenticated;
 
-create policy "authenticated_full_access" on creneaux
-  for all to authenticated using (true) with check (true);
+-- Racines : structures, boutiques, utilisateurs.
+-- Créer une structure/boutique est ouvert à tout authentifié (bootstrap de
+-- l'onboarding self-service : personne n'appartient encore à la structure
+-- au moment de sa création). Lecture/modification/suppression restreintes
+-- à l'appartenance. utilisateurs gère aussi le cas transitoire d'une ligne
+-- créée par un manager sans boutique_id/auth_id encore rattachés (ajout
+-- d'un salarié depuis Équipe, liaison différée).
 
-create policy "authenticated_full_access" on demandes_conges
-  for all to authenticated using (true) with check (true);
+create policy "structures_lecture" on structures
+  for select to authenticated using (user_belongs_to_structure(structures.id));
+create policy "structures_creation" on structures
+  for insert to authenticated with check (true);
+create policy "structures_modification" on structures
+  for update to authenticated
+  using (user_belongs_to_structure(structures.id))
+  with check (user_belongs_to_structure(structures.id));
+create policy "structures_suppression" on structures
+  for delete to authenticated using (user_belongs_to_structure(structures.id));
 
-create policy "authenticated_full_access" on taches
-  for all to authenticated using (true) with check (true);
+create policy "boutiques_lecture" on boutiques
+  for select to authenticated using (user_has_access_to_boutique(boutiques.id));
+create policy "boutiques_creation" on boutiques
+  for insert to authenticated with check (true);
+create policy "boutiques_modification" on boutiques
+  for update to authenticated
+  using (user_has_access_to_boutique(boutiques.id))
+  with check (user_has_access_to_boutique(boutiques.id));
+create policy "boutiques_suppression" on boutiques
+  for delete to authenticated using (user_has_access_to_boutique(boutiques.id));
 
-create policy "authenticated_full_access" on ventes_quotidiennes
-  for all to authenticated using (true) with check (true);
+create policy "acces_utilisateurs" on utilisateurs
+  for all to authenticated
+  using (
+    auth_id = auth.uid()
+    or user_has_access_to_boutique(boutique_id)
+    or (boutique_id is null and user_belongs_to_structure(structure_id))
+  )
+  with check (
+    auth_id = auth.uid()
+    or user_has_access_to_boutique(boutique_id)
+    or (boutique_id is null and user_belongs_to_structure(structure_id))
+  );
 
-create policy "authenticated_full_access" on objectifs
-  for all to authenticated using (true) with check (true);
+-- Scoping direct (boutique_id sur la table elle-même).
 
-create policy "authenticated_full_access" on documents
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on plannings for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on notes_frais
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on taches for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on fournisseurs
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on ventes_quotidiennes for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on factures_fournisseurs
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on objectifs for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on annonces
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on documents for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on annonces_lectures
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on notes_frais for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on modules_formation
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on fournisseurs for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on questions_qcm
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on factures_fournisseurs for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on progression_formation
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on modules_formation for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on echeances
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on echeances for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on conversations
-  for all to authenticated using (true) with check (true);
+-- annonces : condition dupliquée ici (pas de sous-requête) car directement
+-- scopée boutique, comme les tables ci-dessus.
+create policy "acces_par_boutique" on annonces for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on conversations_participants
-  for all to authenticated using (true) with check (true);
+-- conversations reste sciemment scopée boutique (pas participant) : upgrader
+-- vers user_is_conversation_participant casse l'insert().select() utilisé à
+-- la création (RETURNING exige que la policy SELECT passe, hors personne
+-- n'est encore participant à cet instant). Conséquence acceptée : l'id, la
+-- boutique_id et la date de création d'une conversation sont visibles par
+-- toute la boutique — jamais son contenu ni la liste de ses participants,
+-- verrouillés séparément par messages/conversations_participants ci-dessous.
+create policy "acces_par_boutique" on conversations for all to authenticated
+  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "authenticated_full_access" on messages
-  for all to authenticated using (true) with check (true);
+-- Scoping indirect générique (via une table parente).
 
-create policy "authenticated_full_access" on widgets_epingles
-  for all to authenticated using (true) with check (true);
+create policy "acces_par_boutique" on creneaux for all to authenticated
+  using (exists (select 1 from plannings p where p.id = creneaux.planning_id and user_has_access_to_boutique(p.boutique_id)))
+  with check (exists (select 1 from plannings p where p.id = creneaux.planning_id and user_has_access_to_boutique(p.boutique_id)));
+
+create policy "acces_par_boutique" on profils_salarie for all to authenticated
+  using (exists (select 1 from utilisateurs u where u.id = profils_salarie.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
+  with check (exists (select 1 from utilisateurs u where u.id = profils_salarie.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
+
+create policy "acces_par_boutique" on demandes_conges for all to authenticated
+  using (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
+  with check (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
+
+create policy "acces_par_boutique" on annonces_lectures for all to authenticated
+  using (exists (select 1 from annonces a where a.id = annonces_lectures.annonce_id and user_has_access_to_boutique(a.boutique_id)))
+  with check (exists (select 1 from annonces a where a.id = annonces_lectures.annonce_id and user_has_access_to_boutique(a.boutique_id)));
+
+create policy "acces_par_boutique" on questions_qcm for all to authenticated
+  using (exists (select 1 from modules_formation m where m.id = questions_qcm.module_id and user_has_access_to_boutique(m.boutique_id)))
+  with check (exists (select 1 from modules_formation m where m.id = questions_qcm.module_id and user_has_access_to_boutique(m.boutique_id)));
+
+create policy "acces_par_boutique" on progression_formation for all to authenticated
+  using (exists (select 1 from modules_formation m where m.id = progression_formation.module_id and user_has_access_to_boutique(m.boutique_id)))
+  with check (exists (select 1 from modules_formation m where m.id = progression_formation.module_id and user_has_access_to_boutique(m.boutique_id)));
+
+-- Messagerie : scoping par participation (pas juste par boutique).
+
+create policy "participants_lecture" on conversations_participants
+  for select to authenticated using (user_is_conversation_participant(conversation_id));
+create policy "participants_ajout" on conversations_participants
+  for insert to authenticated
+  with check (exists (select 1 from conversations c where c.id = conversations_participants.conversation_id and user_has_access_to_boutique(c.boutique_id)));
+create policy "participants_suppression" on conversations_participants
+  for delete to authenticated using (user_is_conversation_participant(conversation_id));
+
+create policy "messages_participants" on messages
+  for all to authenticated
+  using (user_is_conversation_participant(conversation_id))
+  with check (user_is_conversation_participant(conversation_id) and auteur_id = current_utilisateur_id());
+
+-- Scoping personnel (pas boutique : uniquement ses propres lignes).
+
+create policy "acces_widgets_personnels" on widgets_epingles
+  for all to authenticated
+  using (utilisateur_id = current_utilisateur_id())
+  with check (utilisateur_id = current_utilisateur_id());
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
--- justificatifs). Le téléchargement passe par des URL signées générées
--- côté client, jamais par un accès public direct.
+-- justificatifs, tickets de notes de frais, factures fournisseurs...).
+-- Le téléchargement passe par des URL signées générées côté client. Tous
+-- les chemins commencent par boutique_id/... par convention, ce qui permet
+-- de réutiliser directement user_has_access_to_boutique.
 insert into storage.buckets (id, name, public)
 values ('documents', 'documents', false)
 on conflict (id) do nothing;
 
-create policy "documents_authenticated_full_access" on storage.objects
+create policy "documents_acces_par_boutique" on storage.objects
   for all to authenticated
-  using (bucket_id = 'documents')
-  with check (bucket_id = 'documents');
+  using (bucket_id = 'documents' and user_has_access_to_boutique((storage.foldername(name))[1]::uuid))
+  with check (bucket_id = 'documents' and user_has_access_to_boutique((storage.foldername(name))[1]::uuid));

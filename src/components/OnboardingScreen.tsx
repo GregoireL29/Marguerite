@@ -30,36 +30,42 @@ export function OnboardingScreen({
     setSaving(true);
     setError(null);
 
-    const { data: structure, error: structureError } = await supabase
+    // UUID généré côté client, sans .select() chaîné après l'insert : à la
+    // création, aucune ligne utilisateurs ne référence encore cette
+    // structure/boutique, donc la policy RLS de lecture (qui exige une
+    // appartenance) bloquerait le RETURNING d'un insert().select().
+    const structureId = crypto.randomUUID();
+    const { error: structureError } = await supabase
       .from("structures")
-      .insert({ nom: nomStructure })
-      .select("id")
-      .single();
+      .insert({ id: structureId, nom: nomStructure });
 
-    if (structureError || !structure) {
-      setError(
-        structureError?.message ?? "Erreur lors de la création de la structure."
-      );
+    if (structureError) {
+      setError(structureError.message);
       setSaving(false);
       return;
     }
 
-    const { data: boutique, error: boutiqueError } = await supabase
-      .from("boutiques")
-      .insert({
-        structure_id: structure.id,
-        nom: nomBoutique,
-        adresse: adresse || null,
-        heure_ouverture: heureOuverture,
-        heure_fermeture: heureFermeture,
-      })
-      .select("id")
-      .single();
+    const boutiqueId = crypto.randomUUID();
+    const creneauOuverture = { debut: heureOuverture, fin: heureFermeture };
+    const horaires = {
+      lun: [creneauOuverture],
+      mar: [creneauOuverture],
+      mer: [creneauOuverture],
+      jeu: [creneauOuverture],
+      ven: [creneauOuverture],
+      sam: [creneauOuverture],
+      dim: [],
+    };
+    const { error: boutiqueError } = await supabase.from("boutiques").insert({
+      id: boutiqueId,
+      structure_id: structureId,
+      nom: nomBoutique,
+      adresse: adresse || null,
+      horaires,
+    });
 
-    if (boutiqueError || !boutique) {
-      setError(
-        boutiqueError?.message ?? "Erreur lors de la création de la boutique."
-      );
+    if (boutiqueError) {
+      setError(boutiqueError.message);
       setSaving(false);
       return;
     }
@@ -71,8 +77,8 @@ export function OnboardingScreen({
       .maybeSingle();
 
     const payload = {
-      structure_id: structure.id,
-      boutique_id: boutique.id,
+      structure_id: structureId,
+      boutique_id: boutiqueId,
       role: "manager",
     };
 
