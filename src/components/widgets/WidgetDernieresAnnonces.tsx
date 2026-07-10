@@ -68,10 +68,10 @@ export function WidgetDernieresAnnonces() {
         <ul className="flex flex-col gap-1.5">
           {annonces.map((a) => (
             <li key={a.id} className="flex items-center justify-between gap-2 text-xs">
-              <span className={a.lu ? "text-zinc-500" : "font-medium text-zinc-900"}>
+              <span className={a.lu ? "text-muted-foreground" : "font-medium text-foreground"}>
                 {a.titre}
               </span>
-              <span className="shrink-0 text-zinc-400">{formatDate(a.created_at)}</span>
+              <span className="shrink-0 text-faint-foreground">{formatDate(a.created_at)}</span>
             </li>
           ))}
         </ul>

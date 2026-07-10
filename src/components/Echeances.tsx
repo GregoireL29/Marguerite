@@ -177,18 +177,18 @@ export function Echeances() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Rappels et échéances</h1>
+      <h1 className="text-xl font-medium text-foreground">Rappels et échéances</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4"
+        className="flex flex-col gap-4 rounded-lg border border-border p-4"
       >
-        <p className="text-sm font-medium text-zinc-900">Nouvelle échéance</p>
+        <p className="text-sm font-medium text-foreground">Nouvelle échéance</p>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="titre" className="text-sm text-zinc-600">
+          <label htmlFor="titre" className="text-sm text-muted-foreground">
             Titre
           </label>
           <input
@@ -197,13 +197,13 @@ export function Echeances() {
             value={titre}
             onChange={(e) => setTitre(e.target.value)}
             placeholder="ex. Renouvellement assurance"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="date-echeance" className="text-sm text-zinc-600">
+            <label htmlFor="date-echeance" className="text-sm text-muted-foreground">
               Date d&apos;échéance
             </label>
             <input
@@ -212,18 +212,18 @@ export function Echeances() {
               required
               value={dateEcheance}
               onChange={(e) => setDateEcheance(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="responsable" className="text-sm text-zinc-600">
+            <label htmlFor="responsable" className="text-sm text-muted-foreground">
               Responsable
             </label>
             <select
               id="responsable"
               value={responsable}
               onChange={(e) => setResponsable(e.target.value as Responsable)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               <option value="aucun">Non assigné</option>
               <option value="moi">Moi ({profile.nom})</option>
@@ -233,14 +233,14 @@ export function Echeances() {
 
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="delai-rappel" className="text-sm text-zinc-600">
+            <label htmlFor="delai-rappel" className="text-sm text-muted-foreground">
               Délai de rappel
             </label>
             <select
               id="delai-rappel"
               value={delaiRappel}
               onChange={(e) => setDelaiRappel(e.target.value as DelaiRappel)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               {(Object.keys(DELAI_LABEL) as DelaiRappel[]).map((d) => (
                 <option key={d} value={d}>
@@ -251,7 +251,7 @@ export function Echeances() {
           </div>
           {delaiRappel === "personnalise" && (
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="delai-jours" className="text-sm text-zinc-600">
+              <label htmlFor="delai-jours" className="text-sm text-muted-foreground">
                 Jours avant l&apos;échéance
               </label>
               <input
@@ -261,7 +261,7 @@ export function Echeances() {
                 required
                 value={delaiPersonnaliseJours}
                 onChange={(e) => setDelaiPersonnaliseJours(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
           )}
@@ -270,16 +270,16 @@ export function Echeances() {
         <button
           type="submit"
           disabled={saving}
-          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Création..." : "Créer l'échéance"}
         </button>
       </form>
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : echeances.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucune échéance pour l&apos;instant.</p>
+        <p className="text-sm text-faint-foreground">Aucune échéance pour l&apos;instant.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {echeances.map((e) => {
@@ -288,12 +288,12 @@ export function Echeances() {
               e.statut === "a_venir" && jours >= 0 && jours <= delaiEnJours(e);
             const badgeStyle =
               e.statut === "faite"
-                ? "bg-green-100 text-green-700"
+                ? "bg-green-100 text-green-700 dark:text-green-400"
                 : e.statut === "en_retard"
                   ? "bg-red-100 text-red-700"
                   : imminent
                     ? "bg-amber-100 text-amber-700"
-                    : "bg-zinc-100 text-zinc-600";
+                    : "bg-border/30 text-muted-foreground";
             const badgeLabel =
               e.statut === "faite" ? "Faite" : e.statut === "en_retard" ? "En retard" : "À venir";
             const cardStyle =
@@ -301,7 +301,7 @@ export function Echeances() {
                 ? "border-red-200"
                 : imminent
                   ? "border-amber-200"
-                  : "border-zinc-200";
+                  : "border-border";
 
             return (
               <li
@@ -309,8 +309,8 @@ export function Echeances() {
                 className={`flex items-center justify-between gap-3 rounded-lg border p-4 ${cardStyle}`}
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">{e.titre}</p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-sm font-medium text-foreground">{e.titre}</p>
+                  <p className="text-xs text-muted-foreground">
                     {formatDate(e.date_echeance)} ·{" "}
                     {e.responsable_id === profile.id
                       ? profile.nom
@@ -330,7 +330,7 @@ export function Echeances() {
                     <button
                       onClick={() => marquerFaite(e.id)}
                       disabled={updatingId === e.id}
-                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 disabled:opacity-50"
+                      className="rounded-md border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50"
                     >
                       Marquer comme faite
                     </button>

@@ -132,14 +132,14 @@ export function SalarieIndicateurs() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Indicateurs</h1>
+      <h1 className="text-xl font-medium text-foreground">Indicateurs</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : progressList.length === 0 ? (
-        <p className="text-sm text-zinc-400">
+        <p className="text-sm text-faint-foreground">
           Aucun objectif défini pour le moment.
         </p>
       ) : (
@@ -152,21 +152,21 @@ export function SalarieIndicateurs() {
             return (
               <div key={p.periode} className="flex flex-col gap-2">
                 <div className="flex items-baseline justify-between">
-                  <p className="text-sm font-medium text-zinc-900">
+                  <p className="text-sm font-medium text-foreground">
                     Objectif {PERIODE_LABEL[p.periode]}
                   </p>
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-muted-foreground">
                     {Math.round(p.ca_realise).toLocaleString("fr-FR")} € /{" "}
                     {Math.round(p.ca_cible).toLocaleString("fr-FR")} €
                   </p>
                 </div>
-                <div className="h-3 w-full overflow-hidden rounded-full bg-zinc-100">
+                <div className="h-3 w-full overflow-hidden rounded-full bg-border/30">
                   <div
-                    className="h-full rounded-full bg-zinc-900 transition-all"
+                    className="h-full rounded-full bg-accent transition-all"
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-faint-foreground">
                   {percent}% de l&apos;objectif atteint
                 </p>
               </div>

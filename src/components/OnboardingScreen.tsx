@@ -112,16 +112,16 @@ export function OnboardingScreen({
         className="flex w-full max-w-sm flex-col gap-4"
       >
         <div>
-          <h1 className="text-xl font-medium text-zinc-900">
+          <h1 className="text-xl font-medium text-foreground">
             Bienvenue sur Marguerite
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-muted-foreground">
             Configurons votre structure et votre première boutique.
           </p>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="nom" className="text-sm text-zinc-600">
+          <label htmlFor="nom" className="text-sm text-muted-foreground">
             Votre nom
           </label>
           <input
@@ -129,12 +129,12 @@ export function OnboardingScreen({
             required
             value={nom}
             onChange={(e) => setNom(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="nom_structure" className="text-sm text-zinc-600">
+          <label htmlFor="nom_structure" className="text-sm text-muted-foreground">
             Nom de la structure
           </label>
           <input
@@ -142,12 +142,12 @@ export function OnboardingScreen({
             required
             value={nomStructure}
             onChange={(e) => setNomStructure(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="nom_boutique" className="text-sm text-zinc-600">
+          <label htmlFor="nom_boutique" className="text-sm text-muted-foreground">
             Nom de la boutique
           </label>
           <input
@@ -155,25 +155,25 @@ export function OnboardingScreen({
             required
             value={nomBoutique}
             onChange={(e) => setNomBoutique(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="adresse" className="text-sm text-zinc-600">
+          <label htmlFor="adresse" className="text-sm text-muted-foreground">
             Adresse (optionnel)
           </label>
           <input
             id="adresse"
             value={adresse}
             onChange={(e) => setAdresse(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="heure_ouverture" className="text-sm text-zinc-600">
+            <label htmlFor="heure_ouverture" className="text-sm text-muted-foreground">
               Ouverture
             </label>
             <input
@@ -181,11 +181,11 @@ export function OnboardingScreen({
               type="time"
               value={heureOuverture}
               onChange={(e) => setHeureOuverture(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="heure_fermeture" className="text-sm text-zinc-600">
+            <label htmlFor="heure_fermeture" className="text-sm text-muted-foreground">
               Fermeture
             </label>
             <input
@@ -193,17 +193,17 @@ export function OnboardingScreen({
               type="time"
               value={heureFermeture}
               onChange={(e) => setHeureFermeture(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button
           type="submit"
           disabled={saving}
-          className="mt-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Configuration..." : "Configurer mon espace"}
         </button>

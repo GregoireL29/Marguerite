@@ -260,13 +260,13 @@ export function ManagerAnnonces() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Annonces</h1>
+      <h1 className="text-xl font-medium text-foreground">Annonces</h1>
 
       <div className="flex gap-1">
         <button
           onClick={() => setOnglet("creer")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "creer" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "creer" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Créer
@@ -274,7 +274,7 @@ export function ManagerAnnonces() {
         <button
           onClick={() => setOnglet("recues")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "recues" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "recues" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Reçues
@@ -282,24 +282,24 @@ export function ManagerAnnonces() {
         <button
           onClick={() => setOnglet("suivi")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "suivi" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "suivi" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Suivi
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {onglet === "creer" && (
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4"
+          className="flex flex-col gap-4 rounded-lg border border-border p-4"
         >
-          <p className="text-sm font-medium text-zinc-900">Nouvelle annonce</p>
+          <p className="text-sm font-medium text-foreground">Nouvelle annonce</p>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="titre" className="text-sm text-zinc-600">
+            <label htmlFor="titre" className="text-sm text-muted-foreground">
               Titre
             </label>
             <input
@@ -307,12 +307,12 @@ export function ManagerAnnonces() {
               required
               value={titre}
               onChange={(e) => setTitre(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="message" className="text-sm text-zinc-600">
+            <label htmlFor="message" className="text-sm text-muted-foreground">
               Message
             </label>
             <textarea
@@ -321,19 +321,19 @@ export function ManagerAnnonces() {
               rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="cible" className="text-sm text-zinc-600">
+            <label htmlFor="cible" className="text-sm text-muted-foreground">
               Destinataires
             </label>
             <select
               id="cible"
               value={cibleRole}
               onChange={(e) => setCibleRole(e.target.value as CibleRole)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             >
               <option value="tous">Toute l&apos;équipe</option>
               <option value="managers_uniquement">Managers uniquement</option>
@@ -343,7 +343,7 @@ export function ManagerAnnonces() {
           <button
             type="submit"
             disabled={saving}
-            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {saving ? "Publication..." : "Publier l'annonce"}
           </button>
@@ -352,28 +352,28 @@ export function ManagerAnnonces() {
 
       {onglet === "recues" &&
         (loadingRecues ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : recues.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucune annonce pour l&apos;instant.</p>
+          <p className="text-sm text-faint-foreground">Aucune annonce pour l&apos;instant.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200">
+          <ul className="flex flex-col divide-y divide-border">
             {recues.map((a) => (
               <li key={a.id} className="flex flex-col gap-2 py-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-zinc-900">{a.titre}</p>
-                  <p className="text-xs text-zinc-400">{formatDate(a.created_at)}</p>
+                  <p className="text-sm font-medium text-foreground">{a.titre}</p>
+                  <p className="text-xs text-faint-foreground">{formatDate(a.created_at)}</p>
                 </div>
-                <p className="text-xs text-zinc-500">Par {a.auteur_nom}</p>
-                <p className="text-sm text-zinc-600 whitespace-pre-wrap">{a.message}</p>
+                <p className="text-xs text-muted-foreground">Par {a.auteur_nom}</p>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{a.message}</p>
                 {a.lu ? (
-                  <span className="self-start rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  <span className="self-start rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
                     Lu
                   </span>
                 ) : (
                   <button
                     onClick={() => marquerLu(a.id)}
                     disabled={markingId === a.id}
-                    className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                    className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
                   >
                     J&apos;ai pris connaissance
                   </button>
@@ -385,9 +385,9 @@ export function ManagerAnnonces() {
 
       {onglet === "suivi" &&
         (loadingSuivi ? (
-          <p className="text-sm text-zinc-500">Chargement...</p>
+          <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : suivi.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucune annonce envoyée pour l&apos;instant.</p>
+          <p className="text-sm text-faint-foreground">Aucune annonce envoyée pour l&apos;instant.</p>
         ) : (
           <ul className="flex flex-col gap-4">
             {suivi.map((a) => {
@@ -397,41 +397,41 @@ export function ManagerAnnonces() {
               const expanded = expandedId === a.id;
 
               return (
-                <li key={a.id} className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-4">
+                <li key={a.id} className="flex flex-col gap-2 rounded-lg border border-border p-4">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-zinc-900">{a.titre}</p>
-                    <p className="text-xs text-zinc-400">{formatDate(a.created_at)}</p>
+                    <p className="text-sm font-medium text-foreground">{a.titre}</p>
+                    <p className="text-xs text-faint-foreground">{formatDate(a.created_at)}</p>
                   </div>
-                  <p className="text-xs text-zinc-500">{CIBLE_LABEL[a.cible_role]}</p>
+                  <p className="text-xs text-muted-foreground">{CIBLE_LABEL[a.cible_role]}</p>
 
                   <div className="flex items-center gap-3">
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100">
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-border/30">
                       <div
-                        className="h-full rounded-full bg-zinc-900 transition-all"
+                        className="h-full rounded-full bg-accent transition-all"
                         style={{ width: `${percent}%` }}
                       />
                     </div>
-                    <p className="shrink-0 text-xs text-zinc-500">
+                    <p className="shrink-0 text-xs text-muted-foreground">
                       {luCount}/{total} lu ({percent}%)
                     </p>
                   </div>
 
                   <button
                     onClick={() => setExpandedId(expanded ? null : a.id)}
-                    className="self-start text-xs text-zinc-500 hover:underline"
+                    className="self-start text-xs text-muted-foreground hover:underline"
                   >
                     {expanded ? "Masquer le détail" : "Voir le détail"}
                   </button>
 
                   {expanded && (
-                    <ul className="mt-1 flex flex-col divide-y divide-zinc-100">
+                    <ul className="mt-1 flex flex-col divide-y divide-border">
                       {a.recipients.map((r) => (
                         <li key={r.id} className="flex items-center justify-between py-1.5">
-                          <span className="text-sm text-zinc-700">{r.nom}</span>
+                          <span className="text-sm text-foreground">{r.nom}</span>
                           {r.lu ? (
-                            <span className="text-xs text-green-700">Lu</span>
+                            <span className="text-xs text-green-700 dark:text-green-400">Lu</span>
                           ) : (
-                            <span className="text-xs text-zinc-400">Non lu</span>
+                            <span className="text-xs text-faint-foreground">Non lu</span>
                           )}
                         </li>
                       ))}

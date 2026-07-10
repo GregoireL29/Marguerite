@@ -37,10 +37,10 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="flex w-full max-w-sm flex-col gap-4"
       >
-        <h1 className="mb-2 text-xl font-medium text-zinc-900">Connexion</h1>
+        <h1 className="mb-2 text-xl font-medium text-foreground">Connexion</h1>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="email" className="text-sm text-zinc-600">
+          <label htmlFor="email" className="text-sm text-muted-foreground">
             Email
           </label>
           <input
@@ -49,12 +49,12 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="password" className="text-sm text-zinc-600">
+          <label htmlFor="password" className="text-sm text-muted-foreground">
             Mot de passe
           </label>
           <input
@@ -63,16 +63,16 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
         <button
           type="submit"
           disabled={loading}
-          className="mt-2 rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="mt-2 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {loading ? "Connexion..." : "Se connecter"}
         </button>

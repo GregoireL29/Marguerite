@@ -301,13 +301,13 @@ export function FacturesFournisseurs() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Factures fournisseurs</h1>
+      <h1 className="text-xl font-medium text-foreground">Factures fournisseurs</h1>
 
       <div className="flex gap-1">
         <button
           onClick={() => setOnglet("deposer")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "deposer" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "deposer" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Déposer
@@ -315,30 +315,30 @@ export function FacturesFournisseurs() {
         <button
           onClick={() => setOnglet("consulter")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "consulter" ? "bg-zinc-900 text-white" : "text-zinc-600 hover:bg-zinc-100"
+            onglet === "consulter" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Consulter
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {onglet === "deposer" ? (
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4 rounded-lg border border-zinc-200 p-4"
+          className="flex flex-col gap-4 rounded-lg border border-border p-4"
         >
-          <p className="text-sm font-medium text-zinc-900">Nouvelle facture</p>
+          <p className="text-sm font-medium text-foreground">Nouvelle facture</p>
 
           <div className="flex flex-col gap-2">
-            <label className="text-sm text-zinc-600">Fournisseur</label>
+            <label className="text-sm text-muted-foreground">Fournisseur</label>
             {!nouveauFournisseur ? (
               <div className="flex items-center gap-2">
                 <select
                   value={fournisseurId}
                   onChange={(e) => setFournisseurId(e.target.value)}
-                  className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className="flex-1 rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 >
                   {fournisseurs.length === 0 && <option value="">Aucun fournisseur</option>}
                   {fournisseurs.map((f) => (
@@ -350,19 +350,19 @@ export function FacturesFournisseurs() {
                 <button
                   type="button"
                   onClick={() => setNouveauFournisseur(true)}
-                  className="shrink-0 text-sm text-zinc-600 hover:underline"
+                  className="shrink-0 text-sm text-muted-foreground hover:underline"
                 >
                   + Nouveau
                 </button>
               </div>
             ) : (
-              <div className="flex flex-col gap-2 rounded-md border border-zinc-200 p-3">
+              <div className="flex flex-col gap-2 rounded-md border border-border p-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-zinc-600">Nouveau fournisseur</span>
+                  <span className="text-sm text-muted-foreground">Nouveau fournisseur</span>
                   <button
                     type="button"
                     onClick={() => setNouveauFournisseur(false)}
-                    className="text-xs text-zinc-500 hover:underline"
+                    className="text-xs text-muted-foreground hover:underline"
                   >
                     Annuler
                   </button>
@@ -372,32 +372,32 @@ export function FacturesFournisseurs() {
                   placeholder="Nom (obligatoire)"
                   value={nouveauNom}
                   onChange={(e) => setNouveauNom(e.target.value)}
-                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
                 <input
                   placeholder="SIREN (optionnel)"
                   value={nouveauSiren}
                   onChange={(e) => setNouveauSiren(e.target.value)}
-                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
                 <input
                   placeholder="Adresse (optionnel)"
                   value={nouveauAdresse}
                   onChange={(e) => setNouveauAdresse(e.target.value)}
-                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
                 <input
                   placeholder="Contact commercial (optionnel)"
                   value={nouveauContact}
                   onChange={(e) => setNouveauContact(e.target.value)}
-                  className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 />
               </div>
             )}
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="descriptif" className="text-sm text-zinc-600">
+            <label htmlFor="descriptif" className="text-sm text-muted-foreground">
               Descriptif
             </label>
             <textarea
@@ -407,13 +407,13 @@ export function FacturesFournisseurs() {
               value={descriptif}
               onChange={(e) => setDescriptif(e.target.value)}
               placeholder="ex. Livraison de marchandise du 05/07"
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
 
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="montant-ht" className="text-sm text-zinc-600">
+              <label htmlFor="montant-ht" className="text-sm text-muted-foreground">
                 Montant HT (€)
               </label>
               <input
@@ -424,11 +424,11 @@ export function FacturesFournisseurs() {
                 required
                 value={montantHt}
                 onChange={(e) => setMontantHt(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="taux-tva" className="text-sm text-zinc-600">
+              <label htmlFor="taux-tva" className="text-sm text-muted-foreground">
                 TVA (%)
               </label>
               <input
@@ -439,21 +439,21 @@ export function FacturesFournisseurs() {
                 required
                 value={tauxTva}
                 onChange={(e) => setTauxTva(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
           </div>
 
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="categorie" className="text-sm text-zinc-600">
+              <label htmlFor="categorie" className="text-sm text-muted-foreground">
                 Catégorie
               </label>
               <select
                 id="categorie"
                 value={categorie}
                 onChange={(e) => setCategorie(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
@@ -463,7 +463,7 @@ export function FacturesFournisseurs() {
               </select>
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="date-facture" className="text-sm text-zinc-600">
+              <label htmlFor="date-facture" className="text-sm text-muted-foreground">
                 Date de la facture
               </label>
               <input
@@ -472,13 +472,13 @@ export function FacturesFournisseurs() {
                 required
                 value={dateFacture}
                 onChange={(e) => setDateFacture(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="facture-file" className="text-sm text-zinc-600">
+            <label htmlFor="facture-file" className="text-sm text-muted-foreground">
               Facture (photo ou PDF)
             </label>
             <input
@@ -488,39 +488,39 @@ export function FacturesFournisseurs() {
               accept="image/*,.pdf"
               required
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-sm text-zinc-600"
+              className="text-sm text-muted-foreground"
             />
           </div>
 
           <button
             type="submit"
             disabled={saving || !file}
-            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {saving ? "Envoi..." : "Déposer la facture"}
           </button>
         </form>
       ) : (
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between rounded-lg border border-zinc-200 p-4">
+          <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div>
-              <p className="text-sm text-zinc-600">Total du mois</p>
-              <p className="text-lg font-medium text-zinc-900">
+              <p className="text-sm text-muted-foreground">Total du mois</p>
+              <p className="text-lg font-medium text-foreground">
                 {formatEuros(totalMois.ttc)} € TTC
               </p>
-              <p className="text-xs text-zinc-500">{formatEuros(totalMois.ht)} € HT</p>
+              <p className="text-xs text-muted-foreground">{formatEuros(totalMois.ht)} € HT</p>
             </div>
             <button
               onClick={exporterCsv}
               disabled={filteredFactures.length === 0}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 disabled:opacity-50"
+              className="rounded-md border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50"
             >
               Exporter en CSV
             </button>
           </div>
 
           <div className="flex flex-col gap-1">
-            <label htmlFor="recherche-fournisseur" className="text-sm text-zinc-600">
+            <label htmlFor="recherche-fournisseur" className="text-sm text-muted-foreground">
               Rechercher un fournisseur
             </label>
             <input
@@ -529,7 +529,7 @@ export function FacturesFournisseurs() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Nom du fournisseur..."
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <datalist id="fournisseurs-datalist">
               {fournisseurs.map((f) => (
@@ -539,18 +539,18 @@ export function FacturesFournisseurs() {
           </div>
 
           {pinnedFournisseur && (
-            <div className="flex flex-col gap-1 rounded-lg border border-zinc-900 p-4">
-              <p className="text-sm font-medium text-zinc-900">{pinnedFournisseur.nom}</p>
-              <p className="text-xs text-zinc-500">
+            <div className="flex flex-col gap-1 rounded-lg border border-accent p-4">
+              <p className="text-sm font-medium text-foreground">{pinnedFournisseur.nom}</p>
+              <p className="text-xs text-muted-foreground">
                 SIREN : {pinnedFournisseur.siren ?? "Non renseigné"}
               </p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 Adresse : {pinnedFournisseur.adresse ?? "Non renseignée"}
               </p>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-foreground">
                 Contact commercial : {pinnedFournisseur.contact_commercial ?? "Non renseigné"}
               </p>
-              <p className="mt-1 text-sm text-zinc-900">
+              <p className="mt-1 text-sm text-foreground">
                 {totalFournisseur12Mois !== null
                   ? `Total facturé sur 12 mois : ${formatEuros(totalFournisseur12Mois)} € TTC`
                   : "Aucune facture sur les 12 derniers mois."}
@@ -559,27 +559,27 @@ export function FacturesFournisseurs() {
           )}
 
           {loading ? (
-            <p className="text-sm text-zinc-500">Chargement...</p>
+            <p className="text-sm text-muted-foreground">Chargement...</p>
           ) : filteredFactures.length === 0 ? (
-            <p className="text-sm text-zinc-400">Aucune facture pour l&apos;instant.</p>
+            <p className="text-sm text-faint-foreground">Aucune facture pour l&apos;instant.</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-zinc-200">
+            <ul className="flex flex-col divide-y divide-border">
               {filteredFactures.map((f) => (
                 <li key={f.id} className="flex items-center justify-between py-3">
                   <div>
-                    <p className="text-sm font-medium text-zinc-900">
+                    <p className="text-sm font-medium text-foreground">
                       {f.fournisseur_nom} — {formatEuros(f.montant_ht)} € HT
                     </p>
-                    <p className="text-xs text-zinc-500">
+                    <p className="text-xs text-muted-foreground">
                       {f.categorie} · {formatDate(f.date_facture)} · TVA {f.taux_tva}% ·{" "}
                       {formatEuros(montantTtc(f))} € TTC
                     </p>
-                    <p className="text-sm text-zinc-600">{f.descriptif}</p>
+                    <p className="text-sm text-muted-foreground">{f.descriptif}</p>
                   </div>
                   <button
                     onClick={() => handleVoirFacture(f.fichier_url, f.id)}
                     disabled={downloadingId === f.id}
-                    className="shrink-0 text-sm text-zinc-600 hover:underline disabled:opacity-50"
+                    className="shrink-0 text-sm text-muted-foreground hover:underline disabled:opacity-50"
                   >
                     Voir la facture
                   </button>

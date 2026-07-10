@@ -149,7 +149,7 @@ export function ManagerTaches() {
   if (loading || staleTaches === null) {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       </main>
     );
   }
@@ -166,26 +166,26 @@ export function ManagerTaches() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-zinc-900">Tâches du jour</h1>
+        <h1 className="text-xl font-medium text-foreground">Tâches du jour</h1>
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
+          className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
         >
           {showForm ? "Annuler" : "+ Ajouter une tâche"}
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {total > 0 && (
         <div className="flex flex-col gap-1">
-          <div className="h-2 w-full overflow-hidden rounded bg-zinc-100">
+          <div className="h-2 w-full overflow-hidden rounded bg-border/30">
             <div
-              className="h-full bg-zinc-900 transition-all"
+              className="h-full bg-accent transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             {done} / {total} tâches faites ({progress}%)
           </p>
         </div>
@@ -194,10 +194,10 @@ export function ManagerTaches() {
       {showForm && (
         <form
           onSubmit={handleAdd}
-          className="flex flex-col gap-3 rounded-md border border-zinc-200 p-4"
+          className="flex flex-col gap-3 rounded-md border border-border p-4"
         >
           <div className="flex flex-col gap-1">
-            <label htmlFor="titre" className="text-sm text-zinc-600">
+            <label htmlFor="titre" className="text-sm text-muted-foreground">
               Titre
             </label>
             <input
@@ -205,19 +205,19 @@ export function ManagerTaches() {
               required
               value={titre}
               onChange={(e) => setTitre(e.target.value)}
-              className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
           <div className="flex gap-3">
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="categorie" className="text-sm text-zinc-600">
+              <label htmlFor="categorie" className="text-sm text-muted-foreground">
                 Catégorie
               </label>
               <select
                 id="categorie"
                 value={categorie}
                 onChange={(e) => setCategorie(e.target.value as Categorie)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               >
                 {CATEGORIES.map((c) => (
                   <option key={c.value} value={c.value}>
@@ -227,14 +227,14 @@ export function ManagerTaches() {
               </select>
             </div>
             <div className="flex flex-1 flex-col gap-1">
-              <label htmlFor="assigne_a" className="text-sm text-zinc-600">
+              <label htmlFor="assigne_a" className="text-sm text-muted-foreground">
                 Assigner à
               </label>
               <select
                 id="assigne_a"
                 value={assigneA}
                 onChange={(e) => setAssigneA(e.target.value)}
-                className="rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               >
                 <option value="">Non assigné</option>
                 {salaries.map((s) => (
@@ -248,7 +248,7 @@ export function ManagerTaches() {
           <button
             type="submit"
             disabled={saving}
-            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {saving ? "Ajout..." : "Ajouter"}
           </button>
@@ -256,7 +256,7 @@ export function ManagerTaches() {
       )}
 
       {total === 0 ? (
-        <p className="text-sm text-zinc-400">Aucune tâche aujourd&apos;hui.</p>
+        <p className="text-sm text-faint-foreground">Aucune tâche aujourd&apos;hui.</p>
       ) : (
         CATEGORIES.map(({ value, label }) => {
           const items = taches.filter((t) => t.categorie === value);
@@ -264,8 +264,8 @@ export function ManagerTaches() {
 
           return (
             <div key={value} className="flex flex-col gap-2">
-              <h2 className="text-sm font-medium text-zinc-900">{label}</h2>
-              <ul className="flex flex-col divide-y divide-zinc-200">
+              <h2 className="text-sm font-medium text-foreground">{label}</h2>
+              <ul className="flex flex-col divide-y divide-border">
                 {items.map((t) => (
                   <li
                     key={t.id}
@@ -280,14 +280,14 @@ export function ManagerTaches() {
                       <span
                         className={
                           t.statut === "faite"
-                            ? "text-zinc-400 line-through"
-                            : "text-zinc-900"
+                            ? "text-faint-foreground line-through"
+                            : "text-foreground"
                         }
                       >
                         {t.titre}
                       </span>
                     </label>
-                    <span className="text-xs text-zinc-400">
+                    <span className="text-xs text-faint-foreground">
                       {t.assigne_a
                         ? (salariesById[t.assigne_a] ?? "?")
                         : "Non assigné"}

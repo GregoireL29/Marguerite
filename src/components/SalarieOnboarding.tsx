@@ -175,16 +175,16 @@ export function SalarieOnboarding() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Onboarding</h1>
+      <h1 className="text-xl font-medium text-foreground">Onboarding</h1>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : sortedModules.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucun module de formation pour l&apos;instant.</p>
+        <p className="text-sm text-faint-foreground">Aucun module de formation pour l&apos;instant.</p>
       ) : activeModuleId === null ? (
-        <p className="text-sm text-green-700">
+        <p className="text-sm text-green-700 dark:text-green-400">
           Formation terminée — tous les modules ont été complétés. 🎉
         </p>
       ) : (
@@ -204,20 +204,20 @@ export function SalarieOnboarding() {
               <li
                 key={m.id}
                 className={`flex flex-col gap-2 rounded-lg border p-4 ${
-                  isActive ? "border-zinc-900" : "border-zinc-200"
+                  isActive ? "border-accent" : "border-border"
                 } ${isLocked ? "opacity-50" : ""}`}
               >
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-zinc-900">
+                  <p className="text-sm font-medium text-foreground">
                     {idx + 1}. {m.titre}
                   </p>
                   {isComplete && (
-                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-400">
                       Terminé{row?.score != null ? ` · ${row.score}%` : ""}
                     </span>
                   )}
                   {isLocked && (
-                    <span className="text-xs text-zinc-400">🔒 Verrouillé</span>
+                    <span className="text-xs text-faint-foreground">🔒 Verrouillé</span>
                   )}
                 </div>
 
@@ -227,7 +227,7 @@ export function SalarieOnboarding() {
                       <button
                         onClick={() => handleVoirSupport(m.support_url as string)}
                         disabled={openingSupport}
-                        className="self-start rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 disabled:opacity-50"
+                        className="self-start rounded-md border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50"
                       >
                         Consulter le support
                       </button>
@@ -237,14 +237,14 @@ export function SalarieOnboarding() {
                       <div className="flex flex-col gap-4">
                         {moduleQuestions.map((q, qIdx) => (
                           <div key={q.id} className="flex flex-col gap-2">
-                            <p className="text-sm font-medium text-zinc-900">
+                            <p className="text-sm font-medium text-foreground">
                               {qIdx + 1}. {q.question}
                             </p>
                             <div className="flex flex-col gap-1">
                               {q.options.map((opt, oIdx) => (
                                 <label
                                   key={oIdx}
-                                  className="flex items-center gap-2 text-sm text-zinc-700"
+                                  className="flex items-center gap-2 text-sm text-foreground"
                                 >
                                   <input
                                     type="radio"
@@ -264,7 +264,7 @@ export function SalarieOnboarding() {
                         <button
                           onClick={() => handleValiderModule(m.id, moduleQuestions)}
                           disabled={!allAnswered || submitting}
-                          className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
                         >
                           {submitting ? "Validation..." : "Valider le module"}
                         </button>

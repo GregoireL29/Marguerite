@@ -297,21 +297,21 @@ export function Messagerie() {
     return (
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-8">
         <div className="flex items-center gap-3">
-          <button onClick={retourListe} className="text-sm text-zinc-500 hover:underline">
+          <button onClick={retourListe} className="text-sm text-muted-foreground hover:underline">
             &larr; Conversations
           </button>
-          <h1 className="text-sm font-medium text-zinc-900">
+          <h1 className="text-sm font-medium text-foreground">
             {selectedParticipants.length > 0 ? selectedParticipants.join(", ") : "Conversation"}
           </h1>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-        <div className="flex flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-zinc-200 p-4">
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto rounded-lg border border-border p-4">
           {loadingMessages ? (
-            <p className="text-sm text-zinc-500">Chargement...</p>
+            <p className="text-sm text-muted-foreground">Chargement...</p>
           ) : messages.length === 0 ? (
-            <p className="text-sm text-zinc-400">Aucun message pour l&apos;instant.</p>
+            <p className="text-sm text-faint-foreground">Aucun message pour l&apos;instant.</p>
           ) : (
             messages.map((m) => {
               const isMine = m.auteur_id === profile.id;
@@ -319,15 +319,15 @@ export function Messagerie() {
                 <div key={m.id} className={`flex flex-col ${isMine ? "items-end" : "items-start"}`}>
                   <div
                     className={`max-w-[75%] rounded-lg px-3 py-2 text-sm ${
-                      isMine ? "bg-zinc-900 text-white" : "bg-zinc-100 text-zinc-900"
+                      isMine ? "bg-accent text-accent-foreground" : "bg-border/30 text-foreground"
                     }`}
                   >
                     {!isMine && (
-                      <p className="mb-0.5 text-xs font-medium text-zinc-500">{m.auteur_nom}</p>
+                      <p className="mb-0.5 text-xs font-medium text-muted-foreground">{m.auteur_nom}</p>
                     )}
                     <p className="whitespace-pre-wrap">{m.contenu}</p>
                   </div>
-                  <p className="mt-0.5 text-xs text-zinc-400">{formatDateTime(m.created_at)}</p>
+                  <p className="mt-0.5 text-xs text-faint-foreground">{formatDateTime(m.created_at)}</p>
                 </div>
               );
             })
@@ -339,12 +339,12 @@ export function Messagerie() {
             value={nouveauMessage}
             onChange={(e) => setNouveauMessage(e.target.value)}
             placeholder="Écrire un message..."
-            className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+            className="flex-1 rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
           <button
             type="submit"
             disabled={sending || !nouveauMessage.trim()}
-            className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             Envoyer
           </button>
@@ -356,26 +356,26 @@ export function Messagerie() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-zinc-900">Messagerie</h1>
+        <h1 className="text-xl font-medium text-foreground">Messagerie</h1>
         <button
           onClick={() => setCreating((c) => !c)}
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white"
+          className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
         >
           + Nouvelle conversation
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {creating && (
-        <div className="flex flex-col gap-3 rounded-lg border border-zinc-200 p-4">
-          <p className="text-sm font-medium text-zinc-900">Choisir un ou plusieurs collègues</p>
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+          <p className="text-sm font-medium text-foreground">Choisir un ou plusieurs collègues</p>
           {collegues.length === 0 ? (
-            <p className="text-sm text-zinc-400">Aucun collègue pour l&apos;instant.</p>
+            <p className="text-sm text-faint-foreground">Aucun collègue pour l&apos;instant.</p>
           ) : (
             <div className="flex flex-col gap-2">
               {collegues.map((c) => (
-                <label key={c.id} className="flex items-center gap-2 text-sm text-zinc-700">
+                <label key={c.id} className="flex items-center gap-2 text-sm text-foreground">
                   <input
                     type="checkbox"
                     checked={collegueIds.includes(c.id)}
@@ -389,7 +389,7 @@ export function Messagerie() {
           <button
             onClick={handleCreateConversation}
             disabled={collegueIds.length === 0 || creatingConversation}
-            className="self-start rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {creatingConversation ? "Création..." : "Démarrer la conversation"}
           </button>
@@ -397,26 +397,26 @@ export function Messagerie() {
       )}
 
       {loadingList ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : conversations.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucune conversation pour l&apos;instant.</p>
+        <p className="text-sm text-faint-foreground">Aucune conversation pour l&apos;instant.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-zinc-200">
+        <ul className="flex flex-col divide-y divide-border">
           {conversations.map((c) => (
             <li key={c.id}>
               <button
                 onClick={() => ouvrirConversation(c.id)}
-                className="flex w-full flex-col items-start gap-0.5 py-3 text-left hover:bg-zinc-50"
+                className="flex w-full flex-col items-start gap-0.5 py-3 text-left hover:bg-border/40"
               >
                 <div className="flex w-full items-center justify-between">
-                  <p className="text-sm font-medium text-zinc-900">
+                  <p className="text-sm font-medium text-foreground">
                     {c.participantNoms.length > 0 ? c.participantNoms.join(", ") : "Conversation"}
                   </p>
                   {c.dernierMessageAt && (
-                    <p className="text-xs text-zinc-400">{formatDateTime(c.dernierMessageAt)}</p>
+                    <p className="text-xs text-faint-foreground">{formatDateTime(c.dernierMessageAt)}</p>
                   )}
                 </div>
-                <p className="truncate text-sm text-zinc-500">
+                <p className="truncate text-sm text-muted-foreground">
                   {c.dernierMessage ?? "Aucun message pour l'instant."}
                 </p>
               </button>

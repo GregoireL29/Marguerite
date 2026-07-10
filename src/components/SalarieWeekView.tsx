@@ -144,36 +144,36 @@ export function SalarieWeekView() {
       <div className="flex items-center gap-3">
         <button
           onClick={() => setWeekStart((w) => addDays(w, -7))}
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
           aria-label="Semaine précédente"
         >
           &lsaquo;
         </button>
-        <h1 className="text-lg font-medium text-zinc-900">
+        <h1 className="text-lg font-medium text-foreground">
           Semaine du {formatDateLong(weekStart)}
         </h1>
         <button
           onClick={() => setWeekStart((w) => addDays(w, 7))}
-          className="rounded-md border border-zinc-300 px-2 py-1 text-sm text-zinc-600 hover:bg-zinc-100"
+          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
           aria-label="Semaine suivante"
         >
           &rsaquo;
         </button>
       </div>
 
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-muted-foreground">
         {profile.nom} — {boutiqueNom}
       </p>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="flex gap-1">
         <button
           onClick={() => setViewMode("semaine")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
             viewMode === "semaine"
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-600 hover:bg-zinc-100"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Semaine
@@ -182,8 +182,8 @@ export function SalarieWeekView() {
           onClick={() => setViewMode("jour")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
             viewMode === "jour"
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-600 hover:bg-zinc-100"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           Jour
@@ -191,7 +191,7 @@ export function SalarieWeekView() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : viewMode === "jour" ? (
         <div className="flex flex-col gap-4">
           <div className="flex gap-1">
@@ -201,8 +201,8 @@ export function SalarieWeekView() {
                 onClick={() => setSelectedDayOffset(offset)}
                 className={`rounded-md px-3 py-2 text-sm font-medium ${
                   selectedDayOffset === offset
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-600 hover:bg-zinc-100"
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-border/40"
                 }`}
               >
                 {label.slice(0, 3)}
@@ -219,11 +219,11 @@ export function SalarieWeekView() {
             return (
               <div className="flex flex-col gap-2">
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">{label}</p>
-                  <p className="text-xs text-zinc-400">{formatDateShort(date)}</p>
+                  <p className="text-sm font-medium text-foreground">{label}</p>
+                  <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
                 </div>
                 {dayCreneaux.length === 0 ? (
-                  <span className="text-sm text-zinc-400">Repos</span>
+                  <span className="text-sm text-faint-foreground">Repos</span>
                 ) : (
                   <div className="flex flex-col items-start gap-1">
                     {dayCreneaux.map((c) => (
@@ -242,7 +242,7 @@ export function SalarieWeekView() {
           })()}
         </div>
       ) : (
-        <div className="flex flex-col divide-y divide-zinc-200">
+        <div className="flex flex-col divide-y divide-border">
           {JOURS.map(({ key, label, offset }) => {
             const date = addDays(weekStart, offset);
             const dateISO = toISODate(date);
@@ -254,14 +254,14 @@ export function SalarieWeekView() {
                 className="flex items-center justify-between py-3"
               >
                 <div>
-                  <p className="text-sm font-medium text-zinc-900">{label}</p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-sm font-medium text-foreground">{label}</p>
+                  <p className="text-xs text-faint-foreground">
                     {formatDateShort(date)}
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   {dayCreneaux.length === 0 ? (
-                    <span className="text-sm text-zinc-400">Repos</span>
+                    <span className="text-sm text-faint-foreground">Repos</span>
                   ) : (
                     dayCreneaux.map((c) => (
                       <span

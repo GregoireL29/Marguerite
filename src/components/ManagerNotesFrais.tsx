@@ -155,15 +155,15 @@ export function ManagerNotesFrais() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-zinc-900">Notes de frais</h1>
+      <h1 className="text-xl font-medium text-foreground">Notes de frais</h1>
 
       <div className="flex gap-1">
         <button
           onClick={() => setOnglet("en_attente")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
             onglet === "en_attente"
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-600 hover:bg-zinc-100"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           En attente
@@ -172,23 +172,23 @@ export function ManagerNotesFrais() {
           onClick={() => setOnglet("a_rembourser")}
           className={`rounded-md px-3 py-2 text-sm font-medium ${
             onglet === "a_rembourser"
-              ? "bg-zinc-900 text-white"
-              : "text-zinc-600 hover:bg-zinc-100"
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40"
           }`}
         >
           À rembourser
         </button>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-zinc-500">Chargement...</p>
+        <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : onglet === "en_attente" ? (
         enAttente.length === 0 ? (
-          <p className="text-sm text-zinc-400">Aucune note en attente.</p>
+          <p className="text-sm text-faint-foreground">Aucune note en attente.</p>
         ) : (
-          <ul className="flex flex-col divide-y divide-zinc-200">
+          <ul className="flex flex-col divide-y divide-border">
             {enAttente.map((n) => (
               <li key={n.id} className="flex gap-3 py-4">
                 {previews[n.id] && (
@@ -197,33 +197,33 @@ export function ManagerNotesFrais() {
                     <img
                       src={previews[n.id]}
                       alt="Aperçu du ticket"
-                      className="h-20 w-20 rounded-md border border-zinc-200 object-cover"
+                      className="h-20 w-20 rounded-md border border-border object-cover"
                     />
                   </button>
                 )}
                 <div className="flex flex-1 flex-col gap-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-zinc-900">{n.nom}</p>
-                    <p className="text-sm text-zinc-900">
+                    <p className="text-sm font-medium text-foreground">{n.nom}</p>
+                    <p className="text-sm text-foreground">
                       {Number(n.montant).toFixed(2)} €
                     </p>
                   </div>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-foreground">
                     {n.categorie} · {formatDate(n.created_at)}
                   </p>
-                  <p className="text-sm text-zinc-600">{n.descriptif}</p>
+                  <p className="text-sm text-muted-foreground">{n.descriptif}</p>
                   <div className="mt-2 flex gap-3">
                     <button
                       onClick={() => decide(n.id, "validee")}
                       disabled={processingId === n.id}
-                      className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                      className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
                     >
                       Valider
                     </button>
                     <button
                       onClick={() => decide(n.id, "refusee")}
                       disabled={processingId === n.id}
-                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 disabled:opacity-50"
+                      className="rounded-md border border-border px-3 py-2 text-sm text-foreground disabled:opacity-50"
                     >
                       Refuser
                     </button>
@@ -234,22 +234,22 @@ export function ManagerNotesFrais() {
           </ul>
         )
       ) : aRembourser.length === 0 ? (
-        <p className="text-sm text-zinc-400">Aucune note validée à rembourser.</p>
+        <p className="text-sm text-faint-foreground">Aucune note validée à rembourser.</p>
       ) : (
-        <ul className="flex flex-col divide-y divide-zinc-200">
+        <ul className="flex flex-col divide-y divide-border">
           {aRembourser.map((n) => (
             <li key={n.id} className="flex items-center justify-between py-3">
               <div>
-                <p className="text-sm font-medium text-zinc-900">
+                <p className="text-sm font-medium text-foreground">
                   {n.nom} — {Number(n.montant).toFixed(2)} €
                 </p>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted-foreground">
                   {n.categorie} · {formatDate(n.created_at)}
                 </p>
-                <p className="text-sm text-zinc-600">{n.descriptif}</p>
+                <p className="text-sm text-muted-foreground">{n.descriptif}</p>
                 <button
                   onClick={() => ouvrirTicket(n.ticket_url)}
-                  className="text-xs text-zinc-500 hover:underline"
+                  className="text-xs text-muted-foreground hover:underline"
                 >
                   Voir le ticket
                 </button>
@@ -257,7 +257,7 @@ export function ManagerNotesFrais() {
               <button
                 onClick={() => marquerRembourse(n.id)}
                 disabled={processingId === n.id}
-                className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
                 Marquer comme remboursé
               </button>

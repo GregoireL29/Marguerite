@@ -83,33 +83,33 @@ export function TacheReportConfirmation({
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div>
-        <h1 className="text-xl font-medium text-zinc-900">
+        <h1 className="text-xl font-medium text-foreground">
           Tâches non cochées
         </h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           Ces tâches n&apos;ont pas été cochées comme faites. Ont-elles
           vraiment été réalisées ?
         </p>
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <ul className="flex flex-col divide-y divide-zinc-200">
+      <ul className="flex flex-col divide-y divide-border">
         {remaining.map((t) => (
           <li key={t.id} className="flex items-center justify-between py-3">
-            <span className="text-sm text-zinc-900">{t.titre}</span>
+            <span className="text-sm text-foreground">{t.titre}</span>
             <div className="flex gap-2">
               <button
                 onClick={() => resolve(t, true)}
                 disabled={processingId === t.id}
-                className="rounded-md bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground disabled:opacity-50"
               >
                 Faite
               </button>
               <button
                 onClick={() => resolve(t, false)}
                 disabled={processingId === t.id}
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm text-zinc-700 disabled:opacity-50"
+                className="rounded-md border border-border px-3 py-1.5 text-sm text-foreground disabled:opacity-50"
               >
                 Pas faite
               </button>
