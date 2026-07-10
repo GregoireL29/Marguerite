@@ -6,12 +6,19 @@ import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 
 type Periode = "jour" | "semaine" | "mois" | "annee";
+type ComparisonMode = "precedente" | "annee_precedente" | "objectif";
 
 const PERIODES: { value: Periode; label: string }[] = [
   { value: "jour", label: "Jour" },
   { value: "semaine", label: "Semaine" },
   { value: "mois", label: "Mois" },
   { value: "annee", label: "Année" },
+];
+
+const COMPARISON_OPTIONS: { value: ComparisonMode; label: string }[] = [
+  { value: "precedente", label: "Période précédente" },
+  { value: "annee_precedente", label: "Même période l'an dernier" },
+  { value: "objectif", label: "Objectif personnalisé" },
 ];
 
 function toISODate(d: Date): string {
@@ -59,6 +66,10 @@ function getPrevAnchor(periode: Periode, anchor: Date): Date {
   if (periode === "semaine") return addDays(anchor, -7);
   if (periode === "mois") return new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
   return new Date(anchor.getFullYear() - 1, 0, 1);
+}
+
+function getLastYearAnchor(periode: Periode, anchor: Date): Date {
+  return new Date(anchor.getFullYear() - 1, anchor.getMonth(), anchor.getDate());
 }
 
 function navigateAnchor(periode: Periode, anchor: Date, dir: 1 | -1): Date {
@@ -115,69 +126,100 @@ function classify(p: number | null): Direction {
 
 // Règles simples de comparaison de signes/pourcentages : pas d'appel IA.
 // L'idée est d'expliquer la cause de la variation du CA (fréquentation vs
-// panier moyen) plutôt que d'afficher un chiffre isolé.
+// panier moyen) plutôt que d'afficher un chiffre isolé. referenceLabel
+// précise systématiquement à quoi la comparaison se rapporte.
 function buildDiagnostic(
   caPct: number | null,
   freqPct: number | null,
-  panierPct: number | null
+  panierPct: number | null,
+  referenceLabel: string
 ): string {
   const caDir = classify(caPct);
   const freqDir = classify(freqPct);
   const panierDir = classify(panierPct);
 
   if (caDir === null) {
-    return "Pas assez de données sur la période précédente pour établir une comparaison.";
+    return `Pas assez de données sur ${referenceLabel} pour établir une comparaison.`;
   }
 
   const caStr = formatPct(caPct);
   const freqStr = formatPct(freqPct);
   const panierStr = formatPct(panierPct);
 
+  let body: string;
+
   if (caDir === "up") {
     if (freqDir === "up" && panierDir === "down") {
-      return `CA en hausse (${caStr}) mais porté uniquement par la fréquentation (${freqStr}) : le panier moyen recule (${panierStr}).`;
+      body = `CA en hausse (${caStr}) mais porté uniquement par la fréquentation (${freqStr}) : le panier moyen recule (${panierStr}).`;
+    } else if (freqDir === "down" && panierDir === "up") {
+      body = `CA en hausse (${caStr}) malgré une fréquentation en baisse (${freqStr}), porté par un panier moyen plus élevé (${panierStr}).`;
+    } else if (freqDir === "up" && panierDir === "up") {
+      body = `CA en hausse (${caStr}), porté à la fois par la fréquentation (${freqStr}) et par le panier moyen (${panierStr}).`;
+    } else if (freqDir === "up" && panierDir === "stable") {
+      body = `CA en hausse (${caStr}), porté par la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
+    } else if (freqDir === "stable" && panierDir === "up") {
+      body = `CA en hausse (${caStr}), porté par le panier moyen (${panierStr}) ; la fréquentation reste stable.`;
+    } else {
+      body = `CA en hausse (${caStr}).`;
     }
+  } else if (caDir === "down") {
     if (freqDir === "down" && panierDir === "up") {
-      return `CA en hausse (${caStr}) malgré une fréquentation en baisse (${freqStr}), porté par un panier moyen plus élevé (${panierStr}).`;
+      body = `CA en baisse (${caStr}) à cause d'un recul de la fréquentation (${freqStr}), partiellement compensé par un panier moyen plus élevé (${panierStr}).`;
+    } else if (freqDir === "up" && panierDir === "down") {
+      body = `CA en baisse (${caStr}) malgré une fréquentation en hausse (${freqStr}) : le panier moyen recule fortement (${panierStr}).`;
+    } else if (freqDir === "down" && panierDir === "down") {
+      body = `CA en baisse (${caStr}) : la fréquentation (${freqStr}) et le panier moyen (${panierStr}) reculent tous les deux.`;
+    } else if (freqDir === "down" && panierDir === "stable") {
+      body = `CA en baisse (${caStr}), porté par le recul de la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
+    } else if (freqDir === "stable" && panierDir === "down") {
+      body = `CA en baisse (${caStr}), porté par le recul du panier moyen (${panierStr}) ; la fréquentation reste stable.`;
+    } else {
+      body = `CA en baisse (${caStr}).`;
     }
-    if (freqDir === "up" && panierDir === "up") {
-      return `CA en hausse (${caStr}), porté à la fois par la fréquentation (${freqStr}) et par le panier moyen (${panierStr}).`;
-    }
-    if (freqDir === "up" && panierDir === "stable") {
-      return `CA en hausse (${caStr}), porté par la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
-    }
-    if (freqDir === "stable" && panierDir === "up") {
-      return `CA en hausse (${caStr}), porté par le panier moyen (${panierStr}) ; la fréquentation reste stable.`;
-    }
-    return `CA en hausse (${caStr}).`;
+  } else if (freqDir === "up" && panierDir === "down") {
+    body = `CA stable (${caStr}) : la hausse de fréquentation (${freqStr}) compense un panier moyen en recul (${panierStr}).`;
+  } else if (freqDir === "down" && panierDir === "up") {
+    body = `CA stable (${caStr}) : la baisse de fréquentation (${freqStr}) est compensée par un panier moyen plus élevé (${panierStr}).`;
+  } else {
+    body = `CA stable (${caStr}), fréquentation et panier moyen également stables.`;
   }
 
-  if (caDir === "down") {
-    if (freqDir === "down" && panierDir === "up") {
-      return `CA en baisse (${caStr}) à cause d'un recul de la fréquentation (${freqStr}), partiellement compensé par un panier moyen plus élevé (${panierStr}).`;
-    }
-    if (freqDir === "up" && panierDir === "down") {
-      return `CA en baisse (${caStr}) malgré une fréquentation en hausse (${freqStr}) : le panier moyen recule fortement (${panierStr}).`;
-    }
-    if (freqDir === "down" && panierDir === "down") {
-      return `CA en baisse (${caStr}) : la fréquentation (${freqStr}) et le panier moyen (${panierStr}) reculent tous les deux.`;
-    }
-    if (freqDir === "down" && panierDir === "stable") {
-      return `CA en baisse (${caStr}), porté par le recul de la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
-    }
-    if (freqDir === "stable" && panierDir === "down") {
-      return `CA en baisse (${caStr}), porté par le recul du panier moyen (${panierStr}) ; la fréquentation reste stable.`;
-    }
-    return `CA en baisse (${caStr}).`;
+  return `Par rapport à ${referenceLabel} : ${body}`;
+}
+
+// Diagnostic dédié au mode "Objectif personnalisé" : pas de période de
+// référence à comparer, mais un taux d'atteinte du CA cible et du panier
+// moyen cible définis par le manager.
+function buildDiagnosticObjectif(
+  caCurrent: number,
+  panierCurrent: number | null,
+  objectif: Objectif | null
+): string {
+  if (!objectif) {
+    return "Aucun objectif personnalisé défini pour cette période.";
   }
 
-  if (freqDir === "up" && panierDir === "down") {
-    return `CA stable (${caStr}) : la hausse de fréquentation (${freqStr}) compense un panier moyen en recul (${panierStr}).`;
-  }
-  if (freqDir === "down" && panierDir === "up") {
-    return `CA stable (${caStr}) : la baisse de fréquentation (${freqStr}) est compensée par un panier moyen plus élevé (${panierStr}).`;
-  }
-  return `CA stable (${caStr}), fréquentation et panier moyen également stables.`;
+  const caPctAtteint =
+    objectif.ca_cible > 0 ? (caCurrent / objectif.ca_cible) * 100 : null;
+  const panierPctAtteint =
+    panierCurrent !== null && objectif.panier_moyen_cible > 0
+      ? (panierCurrent / objectif.panier_moyen_cible) * 100
+      : null;
+
+  const caPart = `CA à ${
+    caPctAtteint !== null ? `${Math.round(caPctAtteint)}%` : "n/a"
+  } de l'objectif (${formatEuros(caCurrent)} sur ${formatEuros(objectif.ca_cible)})`;
+
+  const panierPart =
+    panierCurrent !== null
+      ? `panier moyen à ${
+          panierPctAtteint !== null ? `${Math.round(panierPctAtteint)}%` : "n/a"
+        } de l'objectif (${formatEuros(panierCurrent)} sur ${formatEuros(
+          objectif.panier_moyen_cible
+        )})`
+      : "panier moyen non calculable (aucune fréquentation enregistrée)";
+
+  return `Par rapport à l'objectif personnalisé : ${caPart} ; ${panierPart}.`;
 }
 
 interface Objectif {
@@ -190,10 +232,11 @@ export function ManagerIndicateurs() {
   const profile = useUserProfile();
   const [periode, setPeriode] = useState<Periode>("semaine");
   const [anchor, setAnchor] = useState(() => new Date());
+  const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("precedente");
   const [caCurrent, setCaCurrent] = useState(0);
   const [freqCurrent, setFreqCurrent] = useState(0);
-  const [caPrev, setCaPrev] = useState(0);
-  const [freqPrev, setFreqPrev] = useState(0);
+  const [caReference, setCaReference] = useState(0);
+  const [freqReference, setFreqReference] = useState(0);
   const [objectif, setObjectif] = useState<Objectif | null>(null);
   const [caCible, setCaCible] = useState("");
   const [panierCible, setPanierCible] = useState("");
@@ -207,22 +250,27 @@ export function ManagerIndicateurs() {
     setError(null);
 
     const { start, end } = getRange(periode, anchor);
-    const prevAnchor = getPrevAnchor(periode, anchor);
-    const { start: prevStart, end: prevEnd } = getRange(periode, prevAnchor);
+    const referenceAnchor =
+      comparisonMode === "annee_precedente"
+        ? getLastYearAnchor(periode, anchor)
+        : getPrevAnchor(periode, anchor);
+    const { start: refStart, end: refEnd } = getRange(periode, referenceAnchor);
 
-    const [currentRes, prevRes, objectifRes] = await Promise.all([
+    const [currentRes, referenceRes, objectifRes] = await Promise.all([
       supabase
         .from("ventes_quotidiennes")
         .select("chiffre_affaires, frequentation")
         .eq("boutique_id", profile.boutique_id)
         .gte("date", toISODate(start))
         .lte("date", toISODate(end)),
-      supabase
-        .from("ventes_quotidiennes")
-        .select("chiffre_affaires, frequentation")
-        .eq("boutique_id", profile.boutique_id)
-        .gte("date", toISODate(prevStart))
-        .lte("date", toISODate(prevEnd)),
+      comparisonMode === "objectif"
+        ? Promise.resolve({ data: null, error: null })
+        : supabase
+            .from("ventes_quotidiennes")
+            .select("chiffre_affaires, frequentation")
+            .eq("boutique_id", profile.boutique_id)
+            .gte("date", toISODate(refStart))
+            .lte("date", toISODate(refEnd)),
       periode === "jour"
         ? Promise.resolve({ data: null, error: null })
         : supabase
@@ -239,8 +287,8 @@ export function ManagerIndicateurs() {
       setLoading(false);
       return;
     }
-    if (prevRes.error) {
-      setError(prevRes.error.message);
+    if (referenceRes.error) {
+      setError(referenceRes.error.message);
       setLoading(false);
       return;
     }
@@ -251,12 +299,12 @@ export function ManagerIndicateurs() {
     }
 
     const current = currentRes.data ?? [];
-    const prev = prevRes.data ?? [];
+    const reference = referenceRes.data ?? [];
 
     setCaCurrent(current.reduce((s, v) => s + Number(v.chiffre_affaires), 0));
     setFreqCurrent(current.reduce((s, v) => s + v.frequentation, 0));
-    setCaPrev(prev.reduce((s, v) => s + Number(v.chiffre_affaires), 0));
-    setFreqPrev(prev.reduce((s, v) => s + v.frequentation, 0));
+    setCaReference(reference.reduce((s, v) => s + Number(v.chiffre_affaires), 0));
+    setFreqReference(reference.reduce((s, v) => s + v.frequentation, 0));
 
     const obj = objectifRes.data as Objectif | null;
     setObjectif(obj);
@@ -264,11 +312,17 @@ export function ManagerIndicateurs() {
     setPanierCible(obj ? String(obj.panier_moyen_cible) : "");
 
     setLoading(false);
-  }, [profile, periode, anchor]);
+  }, [profile, periode, anchor, comparisonMode]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (periode === "jour" && comparisonMode === "objectif") {
+      setComparisonMode("precedente");
+    }
+  }, [periode, comparisonMode]);
 
   async function handleSaveObjectif(e: React.FormEvent) {
     e.preventDefault();
@@ -303,16 +357,33 @@ export function ManagerIndicateurs() {
 
   const { start, end } = getRange(periode, anchor);
   const panierCurrent = freqCurrent > 0 ? caCurrent / freqCurrent : null;
-  const panierPrev = freqPrev > 0 ? caPrev / freqPrev : null;
+  const panierReference = freqReference > 0 ? caReference / freqReference : null;
 
-  const caPct = pct(caCurrent, caPrev);
-  const freqPct = pct(freqCurrent, freqPrev);
+  const isObjectifMode = comparisonMode === "objectif";
+  const referenceShortLabel =
+    comparisonMode === "annee_precedente" ? "même période l'an dernier" : "période précédente";
+  const referenceLabel =
+    comparisonMode === "annee_precedente" ? "la même période l'an dernier" : "la période précédente";
+
+  const caPct = isObjectifMode ? null : pct(caCurrent, caReference);
+  const freqPct = isObjectifMode ? null : pct(freqCurrent, freqReference);
   const panierPct =
-    panierCurrent !== null && panierPrev !== null
-      ? pct(panierCurrent, panierPrev)
+    !isObjectifMode && panierCurrent !== null && panierReference !== null
+      ? pct(panierCurrent, panierReference)
       : null;
 
-  const diagnostic = buildDiagnostic(caPct, freqPct, panierPct);
+  const caPctAtteint =
+    isObjectifMode && objectif && objectif.ca_cible > 0
+      ? Math.round((caCurrent / objectif.ca_cible) * 100)
+      : null;
+  const panierPctAtteint =
+    isObjectifMode && objectif && panierCurrent !== null && objectif.panier_moyen_cible > 0
+      ? Math.round((panierCurrent / objectif.panier_moyen_cible) * 100)
+      : null;
+
+  const diagnostic = isObjectifMode
+    ? buildDiagnosticObjectif(caCurrent, panierCurrent, objectif)
+    : buildDiagnostic(caPct, freqPct, panierPct, referenceLabel);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
@@ -362,6 +433,30 @@ export function ManagerIndicateurs() {
         </button>
       </div>
 
+      <div className="flex flex-col gap-2">
+        <p className="text-sm text-zinc-600">Comparer à</p>
+        <div className="flex flex-wrap gap-1">
+          {COMPARISON_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setComparisonMode(opt.value)}
+              disabled={opt.value === "objectif" && periode === "jour"}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30 ${
+                comparisonMode === opt.value
+                  ? "bg-zinc-900 text-white"
+                  : "text-zinc-600 hover:bg-zinc-100"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-zinc-400">
+          Comparaison active :{" "}
+          {COMPARISON_OPTIONS.find((o) => o.value === comparisonMode)?.label}
+        </p>
+      </div>
+
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {loading ? (
@@ -375,9 +470,13 @@ export function ManagerIndicateurs() {
                 {formatEuros(caCurrent)}
               </p>
               <p className="text-xs text-zinc-400">
-                vs période précédente : {formatPct(caPct)}
+                {isObjectifMode
+                  ? objectif
+                    ? `Objectif : ${formatEuros(objectif.ca_cible)} (${caPctAtteint}% atteint)`
+                    : "Aucun objectif défini pour cette période."
+                  : `vs ${referenceShortLabel} : ${formatPct(caPct)}`}
               </p>
-              {objectif && (
+              {!isObjectifMode && objectif && (
                 <p className="mt-1 text-xs text-zinc-500">
                   Objectif : {formatEuros(objectif.ca_cible)} (
                   {objectif.ca_cible > 0
@@ -395,9 +494,15 @@ export function ManagerIndicateurs() {
                   : "n/a"}
               </p>
               <p className="text-xs text-zinc-400">
-                vs période précédente : {formatPct(panierPct)}
+                {isObjectifMode
+                  ? objectif
+                    ? `Objectif : ${formatEuros(objectif.panier_moyen_cible)}${
+                        panierPctAtteint !== null ? ` (${panierPctAtteint}% atteint)` : ""
+                      }`
+                    : "Aucun objectif défini pour cette période."
+                  : `vs ${referenceShortLabel} : ${formatPct(panierPct)}`}
               </p>
-              {objectif && (
+              {!isObjectifMode && objectif && (
                 <p className="mt-1 text-xs text-zinc-500">
                   Objectif : {formatEuros(objectif.panier_moyen_cible)}
                   {panierCurrent !== null &&
@@ -412,8 +517,8 @@ export function ManagerIndicateurs() {
 
           <p className="text-xs text-zinc-500">
             Fréquentation : {freqCurrent} client
-            {freqCurrent > 1 ? "s" : ""} ({formatPct(freqPct)} vs période
-            précédente)
+            {freqCurrent > 1 ? "s" : ""}
+            {!isObjectifMode && ` (${formatPct(freqPct)} vs ${referenceShortLabel})`}
           </p>
 
           <div className="rounded-md bg-zinc-50 p-4">
