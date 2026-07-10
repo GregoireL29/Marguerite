@@ -93,11 +93,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [isBlockedRoute, router]);
 
+  // La page d'invitation gère elle-même son propre flux de compte (elle
+  // relie un utilisateur déjà créé par le manager) : elle ne doit jamais
+  // être remplacée par l'écran "créer une nouvelle structure", y compris
+  // dans la fenêtre où un compte fraîchement inscrit n'est pas encore relié.
+  const isJoinRoute = pathname?.startsWith("/rejoindre/") ?? false;
+
   if (status === "loading") {
     return null;
   }
 
-  if (status === "onboarding" && session) {
+  if (status === "onboarding" && session && !isJoinRoute) {
     return (
       <OnboardingScreen
         authId={session.user.id}
