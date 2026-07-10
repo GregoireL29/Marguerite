@@ -362,6 +362,11 @@ function generateWeekCreneaux(
 
 function ManagerPlanning() {
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [viewMode, setViewMode] = useState<"semaine" | "jour">("semaine");
+  const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 6 : day - 1;
+  });
   const [horaires, setHoraires] = useState<Horaires>(EMPTY_HORAIRES);
   const [effectifOuverture, setEffectifOuverture] = useState(1);
   const [effectifFermeture, setEffectifFermeture] = useState(1);
@@ -726,7 +731,135 @@ function ManagerPlanning() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      {mode === "grid" &&
+      {mode === "grid" && (
+        <div className="flex gap-1">
+          <button
+            onClick={() => setViewMode("semaine")}
+            className={`rounded-md px-3 py-2 text-sm font-medium ${
+              viewMode === "semaine"
+                ? "bg-zinc-900 text-white"
+                : "text-zinc-600 hover:bg-zinc-100"
+            }`}
+          >
+            Semaine
+          </button>
+          <button
+            onClick={() => setViewMode("jour")}
+            className={`rounded-md px-3 py-2 text-sm font-medium ${
+              viewMode === "jour"
+                ? "bg-zinc-900 text-white"
+                : "text-zinc-600 hover:bg-zinc-100"
+            }`}
+          >
+            Jour
+          </button>
+        </div>
+      )}
+
+      {mode === "grid" && viewMode === "jour" &&
+        (loading ? (
+          <p className="text-sm text-zinc-500">Chargement...</p>
+        ) : (
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-1">
+              {JOURS.map(({ key, label, offset }) => (
+                <button
+                  key={key}
+                  onClick={() => setSelectedDayOffset(offset)}
+                  className={`rounded-md px-3 py-2 text-sm font-medium ${
+                    selectedDayOffset === offset
+                      ? "bg-zinc-900 text-white"
+                      : "text-zinc-600 hover:bg-zinc-100"
+                  }`}
+                >
+                  {label.slice(0, 3)}
+                </button>
+              ))}
+            </div>
+
+            {(() => {
+              const { key, label, offset } = JOURS[selectedDayOffset];
+              const date = addDays(weekStart, offset);
+              const dateISO = toISODate(date);
+              const dayCreneaux = creneauxByDay[dateISO] ?? [];
+              const openBlocks = horaires[key] ?? [];
+              const buckets = computeBuckets(
+                openBlocks,
+                dayCreneaux,
+                effectifOuverture,
+                effectifJournee,
+                effectifFermeture
+              );
+              const hasGap = buckets.some((b) => b.actual < b.required);
+
+              return (
+                <div className="flex flex-col gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-900">{label}</p>
+                    <p className="text-xs text-zinc-400">{formatDateShort(date)}</p>
+                  </div>
+
+                  {buckets.length > 0 && (
+                    <div
+                      className="flex h-2 w-full max-w-md overflow-hidden rounded"
+                      title="Couverture par rapport aux effectifs minimums"
+                    >
+                      {buckets.map((b, i) => (
+                        <div
+                          key={i}
+                          title={`${minutesToTime(b.start)}–${minutesToTime(
+                            b.end
+                          )} : ${b.actual}/${b.required}`}
+                          className={`flex-1 ${
+                            b.actual < b.required ? "bg-red-400" : "bg-green-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {hasGap && (
+                    <p className="text-xs font-medium text-red-600">
+                      Sous-effectif
+                    </p>
+                  )}
+
+                  <div className="flex max-w-md flex-col gap-2">
+                    {dayCreneaux.length === 0 ? (
+                      <p className="text-sm text-zinc-400">
+                        Aucun créneau ce jour-là.
+                      </p>
+                    ) : (
+                      dayCreneaux.map((c) => {
+                        const salarie = salariesById[c.utilisateur_id];
+                        return (
+                          <button
+                            key={c.id}
+                            onClick={() => startEdit(c)}
+                            className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-white"
+                            style={{ backgroundColor: salarie?.couleur ?? "#999" }}
+                          >
+                            {salarie?.nom ?? "?"} — {c.heure_debut.slice(0, 5)}–
+                            {c.heure_fin.slice(0, 5)}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => startCreate(offset)}
+                    className="self-start text-sm text-zinc-400 hover:text-zinc-700"
+                  >
+                    + Ajouter
+                  </button>
+                </div>
+              );
+            })()}
+          </div>
+        ))}
+
+      {mode === "grid" && viewMode === "semaine" &&
         (loading ? (
           <p className="text-sm text-zinc-500">Chargement...</p>
         ) : (

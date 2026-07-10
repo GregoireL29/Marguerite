@@ -63,6 +63,11 @@ function formatDateLong(d: Date): string {
 export function SalarieWeekView() {
   const profile = useUserProfile();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
+  const [viewMode, setViewMode] = useState<"semaine" | "jour">("semaine");
+  const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
+    const day = new Date().getDay();
+    return day === 0 ? 6 : day - 1;
+  });
   const [boutiqueNom, setBoutiqueNom] = useState("");
   const [creneaux, setCreneaux] = useState<CreneauRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -162,8 +167,80 @@ export function SalarieWeekView() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
+      <div className="flex gap-1">
+        <button
+          onClick={() => setViewMode("semaine")}
+          className={`rounded-md px-3 py-2 text-sm font-medium ${
+            viewMode === "semaine"
+              ? "bg-zinc-900 text-white"
+              : "text-zinc-600 hover:bg-zinc-100"
+          }`}
+        >
+          Semaine
+        </button>
+        <button
+          onClick={() => setViewMode("jour")}
+          className={`rounded-md px-3 py-2 text-sm font-medium ${
+            viewMode === "jour"
+              ? "bg-zinc-900 text-white"
+              : "text-zinc-600 hover:bg-zinc-100"
+          }`}
+        >
+          Jour
+        </button>
+      </div>
+
       {loading ? (
         <p className="text-sm text-zinc-500">Chargement...</p>
+      ) : viewMode === "jour" ? (
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-1">
+            {JOURS.map(({ key, label, offset }) => (
+              <button
+                key={key}
+                onClick={() => setSelectedDayOffset(offset)}
+                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                  selectedDayOffset === offset
+                    ? "bg-zinc-900 text-white"
+                    : "text-zinc-600 hover:bg-zinc-100"
+                }`}
+              >
+                {label.slice(0, 3)}
+              </button>
+            ))}
+          </div>
+
+          {(() => {
+            const { label, offset } = JOURS[selectedDayOffset];
+            const date = addDays(weekStart, offset);
+            const dateISO = toISODate(date);
+            const dayCreneaux = creneaux.filter((c) => c.jour === dateISO);
+
+            return (
+              <div className="flex flex-col gap-2">
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">{label}</p>
+                  <p className="text-xs text-zinc-400">{formatDateShort(date)}</p>
+                </div>
+                {dayCreneaux.length === 0 ? (
+                  <span className="text-sm text-zinc-400">Repos</span>
+                ) : (
+                  <div className="flex flex-col items-start gap-1">
+                    {dayCreneaux.map((c) => (
+                      <span
+                        key={c.id}
+                        className="rounded-md px-3 py-2 text-sm font-medium text-white"
+                        style={{ backgroundColor: profile.couleur }}
+                      >
+                        {c.heure_debut.slice(0, 5)}–{c.heure_fin.slice(0, 5)}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
       ) : (
         <div className="flex flex-col divide-y divide-zinc-200">
           {JOURS.map(({ key, label, offset }) => {
