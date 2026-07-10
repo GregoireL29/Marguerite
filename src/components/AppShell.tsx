@@ -32,6 +32,7 @@ const MANAGER_ONLY_ROUTES = [
   "/regles",
   "/indicateurs/saisie",
   "/factures-fournisseurs",
+  "/echeances",
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

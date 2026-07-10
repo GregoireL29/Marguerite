@@ -274,6 +274,27 @@ create table progression_formation (
 create index idx_progression_formation_utilisateur on progression_formation(utilisateur_id);
 create index idx_progression_formation_module on progression_formation(module_id);
 
+create type delai_rappel_echeance as enum ('jour_meme', '1_semaine', '1_mois', 'personnalise');
+create type statut_echeance as enum ('a_venir', 'en_retard', 'faite');
+
+-- responsable_id nullable : en V1 une échéance n'est assignable qu'à
+-- personne ou au manager lui-même (pas de rôle gérant actif). La colonne
+-- reste une référence utilisateurs générique pour permettre l'assignation
+-- croisée manager/gérant en V2 sans migration supplémentaire.
+create table echeances (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  titre text not null,
+  date_echeance date not null,
+  responsable_id uuid references utilisateurs(id) on delete set null,
+  delai_rappel delai_rappel_echeance not null default 'jour_meme',
+  delai_personnalise_jours integer,
+  statut statut_echeance not null default 'a_venir',
+  created_at timestamptz not null default now()
+);
+
+create index idx_echeances_boutique on echeances(boutique_id);
+
 -- Row Level Security
 -- V1 : une seule structure, pas encore de distinction de droits par rôle.
 -- Tout utilisateur authentifié a un accès complet (lecture/écriture) sur
@@ -298,6 +319,7 @@ alter table annonces_lectures enable row level security;
 alter table modules_formation enable row level security;
 alter table questions_qcm enable row level security;
 alter table progression_formation enable row level security;
+alter table echeances enable row level security;
 
 create policy "authenticated_full_access" on structures
   for all to authenticated using (true) with check (true);
@@ -354,6 +376,9 @@ create policy "authenticated_full_access" on questions_qcm
   for all to authenticated using (true) with check (true);
 
 create policy "authenticated_full_access" on progression_formation
+  for all to authenticated using (true) with check (true);
+
+create policy "authenticated_full_access" on echeances
   for all to authenticated using (true) with check (true);
 
 -- Stockage : bucket privé dédié aux documents (contrats, avenants,
