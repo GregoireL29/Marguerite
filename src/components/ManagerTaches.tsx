@@ -101,6 +101,23 @@ export function ManagerTaches() {
     load();
   }, [load]);
 
+  async function handleDelete(t: Tache) {
+    const confirmed = window.confirm(`Supprimer la tâche "${t.titre}" ?`);
+    if (!confirmed) return;
+
+    const { error: deleteError } = await supabase
+      .from("taches")
+      .delete()
+      .eq("id", t.id);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    await load();
+  }
+
   async function toggleStatut(t: Tache) {
     const next = t.statut === "faite" ? "a_faire" : "faite";
     const { error: updateError } = await supabase
@@ -287,11 +304,19 @@ export function ManagerTaches() {
                         {t.titre}
                       </span>
                     </label>
-                    <span className="text-xs text-faint-foreground">
-                      {t.assigne_a
-                        ? (salariesById[t.assigne_a] ?? "?")
-                        : "Non assigné"}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-3">
+                      <span className="text-xs text-faint-foreground">
+                        {t.assigne_a
+                          ? (salariesById[t.assigne_a] ?? "?")
+                          : "Non assigné"}
+                      </span>
+                      <button
+                        onClick={() => handleDelete(t)}
+                        className="text-xs text-red-600 hover:underline dark:text-red-400"
+                      >
+                        Supprimer
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>

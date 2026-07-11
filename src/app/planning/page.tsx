@@ -576,6 +576,30 @@ function ManagerPlanning() {
     await loadAll(weekStart);
   }
 
+  async function handleDeleteCreneau() {
+    if (!editingId) return;
+    const confirmed = window.confirm("Supprimer ce créneau ?");
+    if (!confirmed) return;
+
+    setSaving(true);
+    setError(null);
+
+    const { error: deleteError } = await supabase
+      .from("creneaux")
+      .delete()
+      .eq("id", editingId);
+
+    setSaving(false);
+
+    if (deleteError) {
+      setError(deleteError.message);
+      return;
+    }
+
+    setMode("grid");
+    await loadAll(weekStart);
+  }
+
   async function handleGenerate() {
     if (!planningId) return;
 
@@ -1040,6 +1064,16 @@ function ManagerPlanning() {
             >
               Annuler
             </button>
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleDeleteCreneau}
+                disabled={saving}
+                className="rounded-md border border-red-600/40 px-3 py-2 text-sm text-red-600 hover:bg-red-600/10 disabled:opacity-50 dark:border-red-400/40 dark:text-red-400"
+              >
+                Supprimer
+              </button>
+            )}
           </div>
         </form>
       )}
