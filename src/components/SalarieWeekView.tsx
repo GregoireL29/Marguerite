@@ -167,23 +167,23 @@ export function SalarieWeekView() {
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex gap-1">
+      <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
         <button
           onClick={() => setViewMode("semaine")}
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             viewMode === "semaine"
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40"
+              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
           }`}
         >
           Semaine
         </button>
         <button
           onClick={() => setViewMode("jour")}
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
+          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
             viewMode === "jour"
               ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40"
+              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
           }`}
         >
           Jour
@@ -194,15 +194,15 @@ export function SalarieWeekView() {
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : viewMode === "jour" ? (
         <div className="flex flex-col gap-4">
-          <div className="flex gap-1">
+          <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
             {JOURS.map(({ key, label, offset }) => (
               <button
                 key={key}
                 onClick={() => setSelectedDayOffset(offset)}
-                className={`rounded-md px-3 py-2 text-sm font-medium ${
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   selectedDayOffset === offset
                     ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-border/40"
+                    : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
                 }`}
               >
                 {label.slice(0, 3)}
