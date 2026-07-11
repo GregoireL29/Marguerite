@@ -214,7 +214,7 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
           Aucun widget épinglé. Clique sur « Personnaliser » pour en ajouter.
         </p>
       ) : (
-        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
+        <div className="columns-1 gap-4 sm:columns-2">
           {pinnedWidgets.map((w) => (
             <div key={w.key} className="mb-4 break-inside-avoid">
               <w.component />
