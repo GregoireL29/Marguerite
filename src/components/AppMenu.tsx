@@ -1,32 +1,100 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { MargueriteLogo } from "@/components/MargueriteLogo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useUserProfile } from "@/components/AppShell";
+import {
+  IconHome,
+  IconCalendar,
+  IconChecklist,
+  IconSun,
+  IconSpeechBubble,
+  IconMegaphone,
+  IconBarChart,
+  IconReceipt,
+  IconInvoice,
+  IconFolder,
+  IconBook,
+  IconBell,
+  IconClock,
+  IconGauge,
+  IconPeople,
+  IconChevronDown,
+} from "@/components/icons/MenuIcons";
 
-const TABS: { label: string; href?: string }[] = [
-  { label: "Accueil", href: "/" },
-  { label: "Planning", href: "/planning" },
-  { label: "Tâches du jour", href: "/taches" },
-  { label: "Congés", href: "/conges" },
-  { label: "Documents", href: "/documents" },
-  { label: "Indicateurs", href: "/indicateurs" },
-  { label: "Notes de frais", href: "/notes-frais" },
-  { label: "Factures fournisseurs", href: "/factures-fournisseurs" },
-  { label: "Annonces", href: "/annonces" },
-  { label: "Onboarding", href: "/onboarding" },
-  { label: "Rappels et échéances", href: "/echeances" },
-  { label: "Messagerie", href: "/messagerie" },
+interface TabItem {
+  label: string;
+  href: string;
+  icon: (props: { className?: string }) => React.JSX.Element;
+  managerOnly?: boolean;
+}
+
+interface CategoryItem {
+  key: string;
+  label: string;
+  icon: (props: { className?: string }) => React.JSX.Element;
+  tabs: TabItem[];
+}
+
+const ACCUEIL: TabItem = { label: "Accueil", href: "/", icon: IconHome };
+
+const CATEGORIES: CategoryItem[] = [
+  {
+    key: "quotidien",
+    label: "Quotidien",
+    icon: IconClock,
+    tabs: [
+      { label: "Planning", href: "/planning", icon: IconCalendar },
+      { label: "Tâches du jour", href: "/taches", icon: IconChecklist },
+      { label: "Congés", href: "/conges", icon: IconSun },
+      { label: "Messagerie", href: "/messagerie", icon: IconSpeechBubble },
+      { label: "Annonces", href: "/annonces", icon: IconMegaphone },
+    ],
+  },
+  {
+    key: "pilotage",
+    label: "Pilotage",
+    icon: IconGauge,
+    tabs: [
+      { label: "Indicateurs", href: "/indicateurs", icon: IconBarChart },
+      { label: "Notes de frais", href: "/notes-frais", icon: IconReceipt },
+      {
+        label: "Factures fournisseurs",
+        href: "/factures-fournisseurs",
+        icon: IconInvoice,
+        managerOnly: true,
+      },
+    ],
+  },
+  {
+    key: "equipe",
+    label: "Équipe",
+    icon: IconPeople,
+    tabs: [
+      { label: "Documents", href: "/documents", icon: IconFolder },
+      { label: "Onboarding", href: "/onboarding", icon: IconBook },
+      {
+        label: "Rappels et échéances",
+        href: "/echeances",
+        icon: IconBell,
+        managerOnly: true,
+      },
+    ],
+  },
 ];
 
 export function AppMenu() {
   const pathname = usePathname();
+  const profile = useUserProfile();
   const [session, setSession] = useState<Session | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -43,7 +111,27 @@ export function AppMenu() {
     return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    setOpenCategory(null);
+  }, [pathname]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setOpenCategory(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   if (!loaded || !session) return null;
+
+  const isSalarie = profile?.role === "salarie";
+  const visibleCategories = CATEGORIES.map((cat) => ({
+    ...cat,
+    tabs: cat.tabs.filter((t) => !t.managerOnly || !isSalarie),
+  })).filter((cat) => cat.tabs.length > 0);
 
   return (
     <header className="flex flex-col border-b border-border bg-card">
@@ -56,30 +144,74 @@ export function AppMenu() {
         </div>
         <ThemeToggle />
       </div>
-      <nav className="flex gap-1 overflow-x-auto border-t border-border px-4 py-2">
-        {TABS.map((tab) =>
-          tab.href ? (
-            <Link
-              key={tab.label}
-              href={tab.href}
-              className={`shrink-0 rounded-md px-3 py-2 text-sm font-medium ${
-                pathname === tab.href
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
-              }`}
-            >
-              {tab.label}
-            </Link>
-          ) : (
-            <span
-              key={tab.label}
-              title="Bientôt disponible"
-              className="shrink-0 cursor-not-allowed whitespace-nowrap rounded-md px-3 py-2 text-sm text-faint-foreground"
-            >
-              {tab.label}
-            </span>
-          )
-        )}
+      <nav
+        ref={navRef}
+        className="relative flex flex-wrap gap-1 border-t border-border px-4 py-2"
+      >
+        <Link
+          href={ACCUEIL.href}
+          className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium ${
+            pathname === ACCUEIL.href
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+          }`}
+        >
+          <ACCUEIL.icon className="h-4 w-4 shrink-0" />
+          {ACCUEIL.label}
+        </Link>
+
+        {visibleCategories.map((cat) => {
+          const isActiveRoute = cat.tabs.some(
+            (t) => pathname === t.href || pathname?.startsWith(`${t.href}/`)
+          );
+          const isOpen = openCategory === cat.key;
+
+          return (
+            <div key={cat.key} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setOpenCategory(isOpen ? null : cat.key)}
+                className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium ${
+                  isActiveRoute
+                    ? "bg-accent text-accent-foreground"
+                    : isOpen
+                      ? "bg-border/40 text-foreground"
+                      : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+                }`}
+              >
+                <cat.icon className="h-4 w-4 shrink-0" />
+                {cat.label}
+                <IconChevronDown
+                  className={`h-3.5 w-3.5 shrink-0 transition-transform ${
+                    isOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {isOpen && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1 shadow-sm">
+                  {cat.tabs.map((tab) => {
+                    const isActiveTab = pathname === tab.href;
+                    return (
+                      <Link
+                        key={tab.href}
+                        href={tab.href}
+                        className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
+                          isActiveTab
+                            ? "bg-accent text-accent-foreground"
+                            : "text-foreground hover:bg-border/40"
+                        }`}
+                      >
+                        <tab.icon className="h-4 w-4 shrink-0" />
+                        {tab.label}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </nav>
     </header>
   );
