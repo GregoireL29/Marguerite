@@ -28,7 +28,9 @@ export function WidgetDernieresAnnonces() {
       let query = supabase
         .from("annonces")
         .select("id, titre, created_at")
-        .eq("boutique_id", profile.boutique_id)
+        .or(
+          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+        )
         .order("created_at", { ascending: false })
         .limit(3);
 

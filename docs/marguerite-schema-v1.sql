@@ -207,17 +207,24 @@ create index idx_factures_fournisseurs_boutique_date on factures_fournisseurs(bo
 
 create type cible_annonce as enum ('tous', 'managers_uniquement');
 
+-- boutique_id nullable : une annonce est soit rattachée à une boutique
+-- précise, soit diffusée à toute la structure (gérant uniquement), auquel
+-- cas structure_id est renseigné à la place. Le check ci-dessous impose
+-- qu'au moins l'un des deux soit défini.
 create table annonces (
   id uuid primary key default uuid_generate_v4(),
-  boutique_id uuid not null references boutiques(id) on delete cascade,
+  boutique_id uuid references boutiques(id) on delete cascade,
+  structure_id uuid references structures(id) on delete cascade,
   auteur_id uuid not null references utilisateurs(id) on delete cascade,
   titre text not null,
   message text not null,
   cible_role cible_annonce not null default 'tous',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint annonces_scope_check check (boutique_id is not null or structure_id is not null)
 );
 
 create index idx_annonces_boutique on annonces(boutique_id);
+create index idx_annonces_structure on annonces(structure_id);
 
 create table annonces_lectures (
   id uuid primary key default uuid_generate_v4(),
@@ -500,10 +507,21 @@ create policy "acces_par_boutique" on modules_formation for all to authenticated
 create policy "acces_par_boutique" on echeances for all to authenticated
   using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
--- annonces : condition dupliquée ici (pas de sous-requête) car directement
--- scopée boutique, comme les tables ci-dessus.
-create policy "acces_par_boutique" on annonces for all to authenticated
-  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
+-- annonces : boutique_id nullable (diffusion structure entière côté
+-- gérant) impose une double condition plutôt que le simple
+-- user_has_access_to_boutique(boutique_id) des tables ci-dessus. Un membre
+-- de la structure a accès à une annonce si elle est rattachée à une
+-- boutique à laquelle il a accès, ou si elle est diffusée à toute sa
+-- structure.
+create policy "acces_annonces" on annonces for all to authenticated
+  using (
+    (boutique_id is not null and user_has_access_to_boutique(boutique_id))
+    or (boutique_id is null and structure_id is not null and user_belongs_to_structure(structure_id))
+  )
+  with check (
+    (boutique_id is not null and user_has_access_to_boutique(boutique_id))
+    or (boutique_id is null and structure_id is not null and user_belongs_to_structure(structure_id))
+  );
 
 -- conversations reste sciemment scopée boutique (pas participant) : upgrader
 -- vers user_is_conversation_participant casse l'insert().select() utilisé à
@@ -529,9 +547,27 @@ create policy "acces_par_boutique" on demandes_conges for all to authenticated
   using (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
   with check (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
 
-create policy "acces_par_boutique" on annonces_lectures for all to authenticated
-  using (exists (select 1 from annonces a where a.id = annonces_lectures.annonce_id and user_has_access_to_boutique(a.boutique_id)))
-  with check (exists (select 1 from annonces a where a.id = annonces_lectures.annonce_id and user_has_access_to_boutique(a.boutique_id)));
+create policy "acces_annonces_lectures" on annonces_lectures for all to authenticated
+  using (
+    exists (
+      select 1 from annonces a
+      where a.id = annonces_lectures.annonce_id
+        and (
+          (a.boutique_id is not null and user_has_access_to_boutique(a.boutique_id))
+          or (a.boutique_id is null and a.structure_id is not null and user_belongs_to_structure(a.structure_id))
+        )
+    )
+  )
+  with check (
+    exists (
+      select 1 from annonces a
+      where a.id = annonces_lectures.annonce_id
+        and (
+          (a.boutique_id is not null and user_has_access_to_boutique(a.boutique_id))
+          or (a.boutique_id is null and a.structure_id is not null and user_belongs_to_structure(a.structure_id))
+        )
+    )
+  );
 
 create policy "acces_par_boutique" on questions_qcm for all to authenticated
   using (exists (select 1 from modules_formation m where m.id = questions_qcm.module_id and user_has_access_to_boutique(m.boutique_id)))

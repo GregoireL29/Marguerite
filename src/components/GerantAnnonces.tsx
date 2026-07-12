@@ -3,8 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { BoutiqueSelector } from "@/components/BoutiqueSelector";
 
 type CibleRole = "tous" | "managers_uniquement";
+type Portee = "structure" | "boutique";
 type Onglet = "creer" | "recues" | "suivi";
 
 const CIBLE_LABEL: Record<CibleRole, string> = {
@@ -18,6 +20,7 @@ interface AnnonceRecue {
   message: string;
   created_at: string;
   auteur_nom: string;
+  boutiqueNom: string | null;
   lu: boolean;
 }
 
@@ -33,6 +36,7 @@ interface AnnonceSuivi {
   titre: string;
   created_at: string;
   cible_role: CibleRole;
+  boutiqueNom: string | null;
   recipients: Recipient[];
 }
 
@@ -46,7 +50,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function ManagerAnnonces() {
+export function GerantAnnonces() {
   const profile = useUserProfile();
   const [onglet, setOnglet] = useState<Onglet>("creer");
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +59,8 @@ export function ManagerAnnonces() {
   const [titre, setTitre] = useState("");
   const [message, setMessage] = useState("");
   const [cibleRole, setCibleRole] = useState<CibleRole>("tous");
+  const [portee, setPortee] = useState<Portee>("structure");
+  const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Reçues
@@ -71,12 +77,12 @@ export function ManagerAnnonces() {
     if (!profile) return;
     setLoadingRecues(true);
 
+    // Pas de filtre boutique_id/structure_id ici : la RLS restreint déjà
+    // exactement aux lignes qu'un gérant doit voir (toutes les boutiques
+    // de sa structure + les diffusions structure entière).
     const { data: annoncesData, error: annoncesError } = await supabase
       .from("annonces")
-      .select("id, titre, message, created_at, utilisateurs(nom)")
-      .or(
-        `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
-      )
+      .select("id, titre, message, created_at, utilisateurs(nom), boutiques(nom)")
       .order("created_at", { ascending: false });
 
     if (annoncesError) {
@@ -91,6 +97,7 @@ export function ManagerAnnonces() {
       message: string;
       created_at: string;
       utilisateurs: { nom: string } | { nom: string }[] | null;
+      boutiques: { nom: string } | { nom: string }[] | null;
     }[];
 
     const ids = rows.map((r) => r.id);
@@ -109,16 +116,20 @@ export function ManagerAnnonces() {
     const luIds = new Set((lecturesData ?? []).map((l) => l.annonce_id));
 
     setRecues(
-      rows.map((r) => ({
-        id: r.id,
-        titre: r.titre,
-        message: r.message,
-        created_at: r.created_at,
-        auteur_nom: Array.isArray(r.utilisateurs)
-          ? (r.utilisateurs[0]?.nom ?? "?")
-          : (r.utilisateurs?.nom ?? "?"),
-        lu: luIds.has(r.id),
-      }))
+      rows.map((r) => {
+        const boutique = Array.isArray(r.boutiques) ? r.boutiques[0] : r.boutiques;
+        return {
+          id: r.id,
+          titre: r.titre,
+          message: r.message,
+          created_at: r.created_at,
+          auteur_nom: Array.isArray(r.utilisateurs)
+            ? (r.utilisateurs[0]?.nom ?? "?")
+            : (r.utilisateurs?.nom ?? "?"),
+          boutiqueNom: boutique?.nom ?? null,
+          lu: luIds.has(r.id),
+        };
+      })
     );
 
     setLoadingRecues(false);
@@ -134,13 +145,12 @@ export function ManagerAnnonces() {
     ] = await Promise.all([
       supabase
         .from("annonces")
-        .select("id, titre, created_at, cible_role")
-        .eq("boutique_id", profile.boutique_id)
+        .select("id, titre, created_at, cible_role, boutique_id, boutiques(nom)")
         .order("created_at", { ascending: false }),
       supabase
         .from("utilisateurs")
-        .select("id, nom, role")
-        .eq("boutique_id", profile.boutique_id),
+        .select("id, nom, role, boutique_id")
+        .eq("structure_id", profile.structure_id),
     ]);
 
     if (annoncesError) {
@@ -154,7 +164,16 @@ export function ManagerAnnonces() {
       return;
     }
 
-    const annonceIds = (annoncesData ?? []).map((a) => a.id);
+    const annonces = (annoncesData ?? []) as unknown as {
+      id: string;
+      titre: string;
+      created_at: string;
+      cible_role: CibleRole;
+      boutique_id: string | null;
+      boutiques: { nom: string } | { nom: string }[] | null;
+    }[];
+
+    const annonceIds = annonces.map((a) => a.id);
     const { data: lecturesData, error: lecturesError } = await supabase
       .from("annonces_lectures")
       .select("annonce_id, utilisateur_id, lu_at")
@@ -169,22 +188,27 @@ export function ManagerAnnonces() {
     const utilisateurs = utilisateursData ?? [];
 
     setSuivi(
-      (annoncesData ?? []).map((a) => {
-        const cible = a.cible_role as CibleRole;
+      annonces.map((a) => {
+        const scopeUsers = a.boutique_id
+          ? utilisateurs.filter((u) => u.boutique_id === a.boutique_id)
+          : utilisateurs;
         const eligibles =
-          cible === "tous"
-            ? utilisateurs
-            : utilisateurs.filter((u) => u.role === "manager" || u.role === "gerant");
+          a.cible_role === "tous"
+            ? scopeUsers
+            : scopeUsers.filter((u) => u.role === "manager" || u.role === "gerant");
 
         const lecturesAnnonce = (lecturesData ?? []).filter(
           (l) => l.annonce_id === a.id
         );
 
+        const boutique = Array.isArray(a.boutiques) ? a.boutiques[0] : a.boutiques;
+
         return {
           id: a.id,
           titre: a.titre,
           created_at: a.created_at,
-          cible_role: cible,
+          cible_role: a.cible_role,
+          boutiqueNom: boutique?.nom ?? null,
           recipients: eligibles.map((u) => {
             const lecture = lecturesAnnonce.find((l) => l.utilisateur_id === u.id);
             return {
@@ -209,12 +233,13 @@ export function ManagerAnnonces() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!profile) return;
+    if (portee === "boutique" && !selectedBoutiqueId) return;
 
     setSaving(true);
     setError(null);
 
     const { error: insertError } = await supabase.from("annonces").insert({
-      boutique_id: profile.boutique_id,
+      boutique_id: portee === "boutique" ? selectedBoutiqueId : null,
       structure_id: profile.structure_id,
       auteur_id: profile.id,
       titre,
@@ -232,6 +257,7 @@ export function ManagerAnnonces() {
     setTitre("");
     setMessage("");
     setCibleRole("tous");
+    setPortee("structure");
     setOnglet("suivi");
   }
 
@@ -329,6 +355,25 @@ export function ManagerAnnonces() {
           </div>
 
           <div className="flex flex-col gap-1">
+            <label htmlFor="portee" className="text-sm text-muted-foreground">
+              Portée
+            </label>
+            <select
+              id="portee"
+              value={portee}
+              onChange={(e) => setPortee(e.target.value as Portee)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              <option value="structure">Toute la structure</option>
+              <option value="boutique">Une boutique</option>
+            </select>
+          </div>
+
+          {portee === "boutique" && (
+            <BoutiqueSelector value={selectedBoutiqueId} onChange={setSelectedBoutiqueId} />
+          )}
+
+          <div className="flex flex-col gap-1">
             <label htmlFor="cible" className="text-sm text-muted-foreground">
               Destinataires
             </label>
@@ -345,7 +390,7 @@ export function ManagerAnnonces() {
 
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || (portee === "boutique" && !selectedBoutiqueId)}
             className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {saving ? "Publication..." : "Publier l'annonce"}
@@ -363,7 +408,12 @@ export function ManagerAnnonces() {
             {recues.map((a) => (
               <li key={a.id} className="flex flex-col gap-2 py-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-foreground">{a.titre}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {a.titre}
+                    <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      {a.boutiqueNom ?? "Toute la structure"}
+                    </span>
+                  </p>
                   <p className="text-xs text-faint-foreground">{formatDate(a.created_at)}</p>
                 </div>
                 <p className="text-xs text-muted-foreground">Par {a.auteur_nom}</p>
@@ -405,7 +455,9 @@ export function ManagerAnnonces() {
                     <p className="text-sm font-medium text-foreground">{a.titre}</p>
                     <p className="text-xs text-faint-foreground">{formatDate(a.created_at)}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground">{CIBLE_LABEL[a.cible_role]}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {CIBLE_LABEL[a.cible_role]} · {a.boutiqueNom ?? "Toute la structure"}
+                  </p>
 
                   <div className="flex items-center gap-3">
                     <div className="h-2 flex-1 overflow-hidden rounded-full bg-border/30">

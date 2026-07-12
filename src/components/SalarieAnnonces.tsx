@@ -38,7 +38,9 @@ export function SalarieAnnonces() {
     const { data: annoncesData, error: annoncesError } = await supabase
       .from("annonces")
       .select("id, titre, message, created_at, utilisateurs(nom)")
-      .eq("boutique_id", profile.boutique_id)
+      .or(
+        `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+      )
       .eq("cible_role", "tous")
       .order("created_at", { ascending: false });
 
