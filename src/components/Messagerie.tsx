@@ -7,6 +7,7 @@ import { useUserProfile } from "@/components/AppShell";
 interface Collegue {
   id: string;
   nom: string;
+  boutique_id: string | null;
 }
 
 interface ConversationSummary {
@@ -139,12 +140,21 @@ export function Messagerie() {
 
   const loadCollegues = useCallback(async () => {
     if (!profile) return;
-    const { data, error: collegueError } = await supabase
+
+    // Le gérant voit tous les collègues de sa structure (toutes boutiques) ;
+    // manager et salarié restent scopés à leur propre boutique.
+    let query = supabase
       .from("utilisateurs")
-      .select("id, nom")
-      .eq("boutique_id", profile.boutique_id)
+      .select("id, nom, boutique_id")
       .neq("id", profile.id)
       .order("nom");
+
+    query =
+      profile.role === "gerant"
+        ? query.eq("structure_id", profile.structure_id)
+        : query.eq("boutique_id", profile.boutique_id);
+
+    const { data, error: collegueError } = await query;
 
     if (!collegueError) setCollegues(data ?? []);
   }, [profile]);
@@ -255,12 +265,24 @@ export function Messagerie() {
   async function handleCreateConversation() {
     if (!profile || collegueIds.length === 0) return;
 
+    // profile.boutique_id est toujours null pour un gérant : la table
+    // conversations impose une boutique_id non nulle, on prend donc celle
+    // du premier collègue sélectionné (le gérant a accès à toutes les
+    // boutiques de sa structure, donc à celle-ci aussi).
+    const conversationBoutiqueId =
+      profile.boutique_id ?? collegues.find((c) => c.id === collegueIds[0])?.boutique_id ?? null;
+
+    if (!conversationBoutiqueId) {
+      setError("Impossible de déterminer la boutique de cette conversation.");
+      return;
+    }
+
     setCreatingConversation(true);
     setError(null);
 
     const { data: newConv, error: insertConvError } = await supabase
       .from("conversations")
-      .insert({ boutique_id: profile.boutique_id })
+      .insert({ boutique_id: conversationBoutiqueId })
       .select("id")
       .single();
 
