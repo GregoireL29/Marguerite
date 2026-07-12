@@ -15,6 +15,12 @@ import {
   WidgetMonParcoursFormation,
   WidgetMonPlanningJour,
 } from "@/components/widgets/SalarieWidgets";
+import {
+  WidgetCaDuJourStructure,
+  WidgetComparatifBoutiques,
+  WidgetNotesFraisEnAttenteStructure,
+  WidgetTotalFacturesMoisStructure,
+} from "@/components/widgets/GerantWidgets";
 
 export interface WidgetDef {
   key: string;
@@ -50,5 +56,28 @@ export const SALARIE_WIDGETS: WidgetDef[] = [
   { key: "mon_parcours_formation", label: "Mon parcours de formation", component: WidgetMonParcoursFormation },
 ];
 
+// Congés en attente, Échéances proches et Dernières annonces sont déjà
+// scopés structure entière côté requête (RLS ou .or() explicite) : les
+// mêmes composants et widget_key sont réutilisés tels quels, pas besoin
+// d'une variante gérant dédiée.
+export const GERANT_WIDGETS: WidgetDef[] = [
+  { key: "comparatif_boutiques", label: "Comparatif boutiques", component: WidgetComparatifBoutiques },
+  { key: "ca_du_jour_structure", label: "CA du jour par boutique", component: WidgetCaDuJourStructure },
+  { key: "conges_en_attente", label: "Demandes de congés en attente", component: WidgetCongesEnAttente },
+  { key: "echeances_proches", label: "Échéances proches", component: WidgetEcheancesProches },
+  { key: "dernieres_annonces", label: "Dernières annonces", component: WidgetDernieresAnnonces },
+  {
+    key: "notes_frais_en_attente_structure",
+    label: "Notes de frais en attente",
+    component: WidgetNotesFraisEnAttenteStructure,
+  },
+  {
+    key: "total_factures_mois_structure",
+    label: "Total factures du mois",
+    component: WidgetTotalFacturesMoisStructure,
+  },
+];
+
 export const DEFAULT_MANAGER_PINS = MANAGER_WIDGETS.map((w) => w.key);
 export const DEFAULT_SALARIE_PINS = SALARIE_WIDGETS.map((w) => w.key);
+export const DEFAULT_GERANT_PINS = GERANT_WIDGETS.map((w) => w.key);
