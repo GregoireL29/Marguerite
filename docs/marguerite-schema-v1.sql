@@ -540,15 +540,18 @@ create policy "acces_annonces" on annonces for all to authenticated
     or (boutique_id is null and structure_id is not null and user_belongs_to_structure(structure_id))
   );
 
--- conversations reste sciemment scopée boutique (pas participant) : upgrader
--- vers user_is_conversation_participant casse l'insert().select() utilisé à
--- la création (RETURNING exige que la policy SELECT passe, hors personne
--- n'est encore participant à cet instant). Conséquence acceptée : l'id, la
--- boutique_id et la date de création d'une conversation sont visibles par
--- toute la boutique — jamais son contenu ni la liste de ses participants,
--- verrouillés séparément par messages/conversations_participants ci-dessous.
-create policy "acces_par_boutique" on conversations for all to authenticated
-  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
+-- conversations reste scopée boutique pour le check d'insert (pas
+-- participant) : upgrader with check vers user_is_conversation_participant
+-- casse l'insert().select() utilisé à la création (RETURNING exige que la
+-- policy SELECT passe, hors personne n'est encore participant à cet
+-- instant). using ajoute en plus user_is_conversation_participant : sans
+-- ça, un salarié invité par un gérant dans une conversation rattachée à une
+-- autre boutique que la sienne ne verrait pas la ligne conversations
+-- elle-même (id/boutique_id/date), bien qu'il ait déjà accès à son contenu
+-- via messages/conversations_participants scopées par participation.
+create policy "acces_conversations" on conversations for all to authenticated
+  using (user_has_access_to_boutique(boutique_id) or user_is_conversation_participant(id))
+  with check (user_has_access_to_boutique(boutique_id));
 
 -- Scoping indirect générique (via une table parente).
 
