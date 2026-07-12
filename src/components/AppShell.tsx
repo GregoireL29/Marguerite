@@ -98,6 +98,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // être remplacée par l'écran "créer une nouvelle structure", y compris
   // dans la fenêtre où un compte fraîchement inscrit n'est pas encore relié.
   const isJoinRoute = pathname?.startsWith("/rejoindre/") ?? false;
+  const isLoginRoute = pathname === "/login";
+
+  // Sans session, aucune page protégée n'a de contenu à afficher (chacune
+  // se contente de rendre `null` faute de profil) : sans cette redirection,
+  // un visiteur non connecté atterrit sur une page blanche silencieuse
+  // plutôt que sur l'écran de connexion.
+  //
+  // On vérifie `!session` en plus de `status === "logged-out"` : dans
+  // checkOnboarding, `setSession(session)` est synchrone alors que
+  // `setStatus("ready")` n'arrive qu'après une requête awaited. Sans ce
+  // garde-fou, une connexion réussie déclenche un aller-retour vers
+  // /login pendant cette fenêtre (status encore "logged-out" mais session
+  // déjà posée), annulant la redirection légitime de la page de connexion.
+  useEffect(() => {
+    if (status === "logged-out" && !session && !isLoginRoute && !isJoinRoute) {
+      router.replace("/login");
+    }
+  }, [status, session, isLoginRoute, isJoinRoute, router]);
 
   if (status === "loading") {
     return null;
