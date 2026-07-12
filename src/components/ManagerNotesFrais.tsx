@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 
-type Onglet = "en_attente" | "a_rembourser";
-
 interface NoteRow {
   id: string;
   montant: number;
@@ -65,7 +63,12 @@ async function loadNotesByStatut(
 export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
   const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
-  const [onglet, setOnglet] = useState<Onglet>("en_attente");
+  // Validation première ligne (légitimité) et action financière
+  // (remboursement) sont deux responsabilités séparées : le manager ne voit
+  // que la file "En attente", le gérant ne voit que "À rembourser", sans
+  // repasser derrière la décision de légitimité déjà tranchée par le
+  // manager (cf. docs/cahier-des-charges.md).
+  const isGerant = profile?.role === "gerant";
   const [enAttente, setEnAttente] = useState<NoteRow[]>([]);
   const [aRembourser, setARembourser] = useState<NoteRow[]>([]);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -79,29 +82,29 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
     setError(null);
 
     try {
-      const [pending, validated] = await Promise.all([
-        loadNotesByStatut(effectiveBoutiqueId, "en_attente"),
-        loadNotesByStatut(effectiveBoutiqueId, "validee"),
-      ]);
+      if (isGerant) {
+        const validated = await loadNotesByStatut(effectiveBoutiqueId, "validee");
+        setARembourser(validated);
+      } else {
+        const pending = await loadNotesByStatut(effectiveBoutiqueId, "en_attente");
+        setEnAttente(pending);
 
-      setEnAttente(pending);
-      setARembourser(validated);
-
-      const signedEntries = await Promise.all(
-        pending.map(async (n) => {
-          const { data } = await supabase.storage
-            .from("documents")
-            .createSignedUrl(n.ticket_url, 300);
-          return [n.id, data?.signedUrl ?? ""] as const;
-        })
-      );
-      setPreviews(Object.fromEntries(signedEntries));
+        const signedEntries = await Promise.all(
+          pending.map(async (n) => {
+            const { data } = await supabase.storage
+              .from("documents")
+              .createSignedUrl(n.ticket_url, 300);
+            return [n.id, data?.signedUrl ?? ""] as const;
+          })
+        );
+        setPreviews(Object.fromEntries(signedEntries));
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Erreur de chargement.");
     }
 
     setLoading(false);
-  }, [effectiveBoutiqueId]);
+  }, [effectiveBoutiqueId, isGerant]);
 
   useEffect(() => {
     load();
@@ -156,36 +159,15 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-foreground">Notes de frais</h1>
-
-      <div className="flex gap-1">
-        <button
-          onClick={() => setOnglet("en_attente")}
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "en_attente"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40"
-          }`}
-        >
-          En attente
-        </button>
-        <button
-          onClick={() => setOnglet("a_rembourser")}
-          className={`rounded-md px-3 py-2 text-sm font-medium ${
-            onglet === "a_rembourser"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40"
-          }`}
-        >
-          À rembourser
-        </button>
-      </div>
+      <h1 className="text-xl font-medium text-foreground">
+        Notes de frais {isGerant ? "— à rembourser" : "— en attente"}
+      </h1>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement...</p>
-      ) : onglet === "en_attente" ? (
+      ) : !isGerant ? (
         enAttente.length === 0 ? (
           <p className="text-sm text-faint-foreground">Aucune note en attente.</p>
         ) : (
