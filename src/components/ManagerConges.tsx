@@ -11,6 +11,7 @@ interface DemandeRow {
   date_fin: string;
   message: string | null;
   nom: string;
+  boutiqueNom: string | null;
   hasConflit: boolean;
 }
 
@@ -38,7 +39,7 @@ export function ManagerConges() {
     const { data, error: fetchError } = await supabase
       .from("demandes_conges")
       .select(
-        "id, utilisateur_id, date_debut, date_fin, message, statut, utilisateurs(nom)"
+        "id, utilisateur_id, date_debut, date_fin, message, statut, utilisateurs(nom, boutiques(nom))"
       )
       .eq("statut", "en_attente")
       .order("created_at", { ascending: true });
@@ -49,13 +50,18 @@ export function ManagerConges() {
       return;
     }
 
+    type UtilisateurJoin = {
+      nom: string;
+      boutiques: { nom: string } | { nom: string }[] | null;
+    };
+
     const rows = (data ?? []) as unknown as {
       id: string;
       utilisateur_id: string;
       date_debut: string;
       date_fin: string;
       message: string | null;
-      utilisateurs: { nom: string } | { nom: string }[] | null;
+      utilisateurs: UtilisateurJoin | UtilisateurJoin[] | null;
     }[];
 
     const withConflicts = await Promise.all(
@@ -67,9 +73,13 @@ export function ManagerConges() {
           .gte("jour", r.date_debut)
           .lte("jour", r.date_fin);
 
-        const nom = Array.isArray(r.utilisateurs)
-          ? (r.utilisateurs[0]?.nom ?? "?")
-          : (r.utilisateurs?.nom ?? "?");
+        const utilisateur = Array.isArray(r.utilisateurs)
+          ? r.utilisateurs[0]
+          : r.utilisateurs;
+        const nom = utilisateur?.nom ?? "?";
+        const boutique = Array.isArray(utilisateur?.boutiques)
+          ? utilisateur.boutiques[0]
+          : utilisateur?.boutiques;
 
         return {
           id: r.id,
@@ -78,6 +88,7 @@ export function ManagerConges() {
           date_fin: r.date_fin,
           message: r.message,
           nom,
+          boutiqueNom: boutique?.nom ?? null,
           hasConflit: (count ?? 0) > 0,
         };
       })
@@ -132,6 +143,11 @@ export function ManagerConges() {
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     {d.nom}
+                    {profile.role === "gerant" && d.boutiqueNom && (
+                      <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {d.boutiqueNom}
+                      </span>
+                    )}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {formatDate(d.date_debut)} – {formatDate(d.date_fin)}

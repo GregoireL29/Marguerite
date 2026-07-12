@@ -40,8 +40,9 @@ function formatDate(iso: string): string {
   });
 }
 
-export function ManagerDocuments() {
+export function ManagerDocuments({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [salaries, setSalaries] = useState<Salarie[]>([]);
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,7 +57,7 @@ export function ManagerDocuments() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setLoading(true);
     setError(null);
 
@@ -65,13 +66,13 @@ export function ManagerDocuments() {
         supabase
           .from("utilisateurs")
           .select("id, nom")
-          .eq("boutique_id", profile.boutique_id)
+          .eq("boutique_id", effectiveBoutiqueId)
           .eq("role", "salarie")
           .order("nom"),
         supabase
           .from("documents")
           .select("id, utilisateur_id, nom, type, fichier_url, created_at")
-          .eq("boutique_id", profile.boutique_id)
+          .eq("boutique_id", effectiveBoutiqueId)
           .order("created_at", { ascending: false }),
       ]);
 
@@ -93,7 +94,7 @@ export function ManagerDocuments() {
     }
     setLoading(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  }, [profile, effectiveBoutiqueId]);
 
   useEffect(() => {
     load();
@@ -101,12 +102,12 @@ export function ManagerDocuments() {
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile || !file || !utilisateurId) return;
+    if (!profile || !effectiveBoutiqueId || !file || !utilisateurId) return;
 
     setUploading(true);
     setError(null);
 
-    const path = `${profile.boutique_id}/${utilisateurId}/${Date.now()}_${file.name}`;
+    const path = `${effectiveBoutiqueId}/${utilisateurId}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage
       .from("documents")
@@ -120,7 +121,7 @@ export function ManagerDocuments() {
 
     const { error: insertError } = await supabase.from("documents").insert({
       utilisateur_id: utilisateurId,
-      boutique_id: profile.boutique_id,
+      boutique_id: effectiveBoutiqueId,
       nom: nom.trim() || file.name,
       type,
       uploaded_by: profile.id,
