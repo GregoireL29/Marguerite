@@ -479,6 +479,12 @@ function ManagerPlanning() {
       currentStatut = createdPlanning.statut;
     }
 
+    if (!currentPlanningId) {
+      setError("Erreur lors de la création du planning.");
+      setLoading(false);
+      return;
+    }
+
     setPlanningId(currentPlanningId);
     setPlanningStatut(currentStatut ?? null);
 
