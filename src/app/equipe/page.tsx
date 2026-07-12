@@ -34,11 +34,18 @@ interface ProfilSalarie {
   solde_conges_jours: number | null;
 }
 
+const ROLES = [
+  { value: "salarie", label: "Salarié" },
+  { value: "manager", label: "Manager" },
+  { value: "gerant", label: "Gérant" },
+];
+
 interface Salarie {
   id: string;
   nom: string;
   email: string;
   couleur: string;
+  role: string;
   auth_id: string | null;
   invite_token: string | null;
   invite_expires_at: string | null;
@@ -49,6 +56,7 @@ interface FormState {
   nom: string;
   email: string;
   couleur: string;
+  role: string;
   type_contrat: string;
   heures_hebdo: string;
   jours_repos_fixes: JourRepos[];
@@ -59,6 +67,7 @@ const EMPTY_FORM: FormState = {
   nom: "",
   email: "",
   couleur: "#6B8F5E",
+  role: "salarie",
   type_contrat: "cdi_temps_plein",
   heures_hebdo: "35",
   jours_repos_fixes: [],
@@ -83,7 +92,7 @@ export default function EquipePage() {
     const { data, error } = await supabase
       .from("utilisateurs")
       .select(
-        "id, nom, email, couleur, auth_id, invite_token, invite_expires_at, profils_salarie(*)"
+        "id, nom, email, couleur, role, auth_id, invite_token, invite_expires_at, profils_salarie(*)"
       )
       .order("nom");
 
@@ -114,6 +123,7 @@ export default function EquipePage() {
       nom: salarie.nom,
       email: salarie.email,
       couleur: salarie.couleur,
+      role: salarie.role,
       type_contrat: profil?.type_contrat ?? "cdi_temps_plein",
       heures_hebdo: profil ? String(profil.heures_hebdo) : "35",
       jours_repos_fixes: profil?.jours_repos_fixes ?? [],
@@ -150,7 +160,9 @@ export default function EquipePage() {
       .update({
         invite_token: token,
         invite_expires_at: expiresAt,
-        boutique_id: profile.boutique_id,
+        // Un gérant n'est pas rattaché à une boutique unique : on ne le
+        // fixe que pour un salarié/manager invité.
+        ...(salarie.role === "gerant" ? {} : { boutique_id: profile.boutique_id }),
       })
       .eq("id", salarie.id);
 
@@ -186,7 +198,12 @@ export default function EquipePage() {
     if (editingId) {
       const { error: updateUserError } = await supabase
         .from("utilisateurs")
-        .update({ nom: form.nom, email: form.email, couleur: form.couleur })
+        .update({
+          nom: form.nom,
+          email: form.email,
+          couleur: form.couleur,
+          role: form.role,
+        })
         .eq("id", editingId);
 
       if (updateUserError) {
@@ -245,6 +262,7 @@ export default function EquipePage() {
           nom: form.nom,
           email: form.email,
           couleur: form.couleur,
+          role: form.role,
         })
         .select("id")
         .single();
@@ -331,6 +349,11 @@ export default function EquipePage() {
                       <div>
                         <p className="text-sm font-medium text-foreground">
                           {s.nom}
+                          {s.role !== "salarie" && (
+                            <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                              {s.role === "gerant" ? "Gérant" : "Manager"}
+                            </span>
+                          )}
                         </p>
                         <p className="text-xs text-muted-foreground">{s.email}</p>
                       </div>
@@ -423,6 +446,24 @@ export default function EquipePage() {
               }
               className="h-10 w-16 rounded-md border border-border"
             />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="role" className="text-sm text-muted-foreground">
+              Rôle
+            </label>
+            <select
+              id="role"
+              value={form.role}
+              onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              {ROLES.map((r) => (
+                <option key={r.value} value={r.value}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col gap-1">

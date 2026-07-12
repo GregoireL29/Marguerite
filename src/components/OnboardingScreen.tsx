@@ -18,10 +18,6 @@ export function OnboardingScreen({
   const router = useRouter();
   const [nom, setNom] = useState("");
   const [nomStructure, setNomStructure] = useState("");
-  const [nomBoutique, setNomBoutique] = useState("");
-  const [adresse, setAdresse] = useState("");
-  const [heureOuverture, setHeureOuverture] = useState("09:00");
-  const [heureFermeture, setHeureFermeture] = useState("19:00");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -32,8 +28,8 @@ export function OnboardingScreen({
 
     // UUID généré côté client, sans .select() chaîné après l'insert : à la
     // création, aucune ligne utilisateurs ne référence encore cette
-    // structure/boutique, donc la policy RLS de lecture (qui exige une
-    // appartenance) bloquerait le RETURNING d'un insert().select().
+    // structure, donc la policy RLS de lecture (qui exige une appartenance)
+    // bloquerait le RETURNING d'un insert().select().
     const structureId = crypto.randomUUID();
     const { error: structureError } = await supabase
       .from("structures")
@@ -45,41 +41,20 @@ export function OnboardingScreen({
       return;
     }
 
-    const boutiqueId = crypto.randomUUID();
-    const creneauOuverture = { debut: heureOuverture, fin: heureFermeture };
-    const horaires = {
-      lun: [creneauOuverture],
-      mar: [creneauOuverture],
-      mer: [creneauOuverture],
-      jeu: [creneauOuverture],
-      ven: [creneauOuverture],
-      sam: [creneauOuverture],
-      dim: [],
-    };
-    const { error: boutiqueError } = await supabase.from("boutiques").insert({
-      id: boutiqueId,
-      structure_id: structureId,
-      nom: nomBoutique,
-      adresse: adresse || null,
-      horaires,
-    });
-
-    if (boutiqueError) {
-      setError(boutiqueError.message);
-      setSaving(false);
-      return;
-    }
-
     const { data: existing } = await supabase
       .from("utilisateurs")
       .select("id")
       .eq("auth_id", authId)
       .maybeSingle();
 
+    // La personne qui crée une toute nouvelle structure en est la gérante
+    // (vue transversale multi-boutiques), pas la manager d'une seule
+    // boutique : elle crée sa première boutique juste après, via "Mes
+    // boutiques".
     const payload = {
       structure_id: structureId,
-      boutique_id: boutiqueId,
-      role: "manager",
+      boutique_id: null,
+      role: "gerant",
     };
 
     const { error: userError } = existing
@@ -102,7 +77,7 @@ export function OnboardingScreen({
 
     setSaving(false);
     await onComplete();
-    router.push("/");
+    router.push("/boutique");
   }
 
   return (
@@ -116,7 +91,8 @@ export function OnboardingScreen({
             Bienvenue sur Marguerite
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Configurons votre structure et votre première boutique.
+            Configurons votre structure. Vous pourrez ensuite créer votre
+            première boutique.
           </p>
         </div>
 
@@ -144,58 +120,6 @@ export function OnboardingScreen({
             onChange={(e) => setNomStructure(e.target.value)}
             className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="nom_boutique" className="text-sm text-muted-foreground">
-            Nom de la boutique
-          </label>
-          <input
-            id="nom_boutique"
-            required
-            value={nomBoutique}
-            onChange={(e) => setNomBoutique(e.target.value)}
-            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-          />
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <label htmlFor="adresse" className="text-sm text-muted-foreground">
-            Adresse (optionnel)
-          </label>
-          <input
-            id="adresse"
-            value={adresse}
-            onChange={(e) => setAdresse(e.target.value)}
-            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="heure_ouverture" className="text-sm text-muted-foreground">
-              Ouverture
-            </label>
-            <input
-              id="heure_ouverture"
-              type="time"
-              value={heureOuverture}
-              onChange={(e) => setHeureOuverture(e.target.value)}
-              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label htmlFor="heure_fermeture" className="text-sm text-muted-foreground">
-              Fermeture
-            </label>
-            <input
-              id="heure_fermeture"
-              type="time"
-              value={heureFermeture}
-              onChange={(e) => setHeureFermeture(e.target.value)}
-              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-          </div>
         </div>
 
         {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}

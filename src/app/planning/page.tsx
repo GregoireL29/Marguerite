@@ -361,6 +361,7 @@ function generateWeekCreneaux(
 }
 
 function ManagerPlanning() {
+  const profile = useUserProfile();
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewMode, setViewMode] = useState<"semaine" | "jour">("semaine");
   const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
@@ -748,7 +749,7 @@ function ManagerPlanning() {
             Gérer l&apos;équipe
           </Link>
           <Link href="/boutique" className="text-sm text-muted-foreground hover:underline">
-            Ma boutique
+            {profile?.role === "gerant" ? "Mes boutiques" : "Ma boutique"}
           </Link>
         </div>
       </div>
