@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { BoutiqueSelector } from "@/components/BoutiqueSelector";
 
 type DelaiRappel = "jour_meme" | "1_semaine" | "1_mois" | "personnalise";
 type Statut = "a_venir" | "en_retard" | "faite";
 type Responsable = "aucun" | "moi";
+type Portee = "structure" | "boutique";
 
 const DELAI_LABEL: Record<DelaiRappel, string> = {
   jour_meme: "Le jour même",
@@ -30,7 +32,7 @@ interface Echeance {
   delai_rappel: DelaiRappel;
   delai_personnalise_jours: number | null;
   statut: Statut;
-  boutique_id: string | null;
+  boutiqueNom: string | null;
 }
 
 function toISODate(d: Date): string {
@@ -62,7 +64,7 @@ function delaiEnJours(e: Pick<Echeance, "delai_rappel" | "delai_personnalise_jou
   return DELAI_JOURS[e.delai_rappel];
 }
 
-export function ManagerEcheances() {
+export function GerantEcheances() {
   const profile = useUserProfile();
   const [echeances, setEcheances] = useState<Echeance[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +76,8 @@ export function ManagerEcheances() {
   const [delaiRappel, setDelaiRappel] = useState<DelaiRappel>("jour_meme");
   const [delaiPersonnaliseJours, setDelaiPersonnaliseJours] = useState("7");
   const [responsable, setResponsable] = useState<Responsable>("aucun");
+  const [portee, setPortee] = useState<Portee>("structure");
+  const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -81,13 +85,13 @@ export function ManagerEcheances() {
     setLoading(true);
     setError(null);
 
+    // Pas de filtre boutique_id/structure_id : la RLS restreint déjà aux
+    // échéances de toutes les boutiques de la structure + celles diffusées
+    // à la structure entière.
     const { data, error: fetchError } = await supabase
       .from("echeances")
       .select(
-        "id, titre, date_echeance, responsable_id, delai_rappel, delai_personnalise_jours, statut, boutique_id"
-      )
-      .or(
-        `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+        "id, titre, date_echeance, responsable_id, delai_rappel, delai_personnalise_jours, statut, boutiques(nom)"
       )
       .order("date_echeance", { ascending: true });
 
@@ -97,8 +101,18 @@ export function ManagerEcheances() {
       return;
     }
 
+    const rows = (data ?? []) as unknown as {
+      id: string;
+      titre: string;
+      date_echeance: string;
+      responsable_id: string | null;
+      delai_rappel: DelaiRappel;
+      delai_personnalise_jours: number | null;
+      statut: Statut;
+      boutiques: { nom: string } | { nom: string }[] | null;
+    }[];
+
     const todayISO = toISODate(new Date());
-    const rows = (data ?? []) as Echeance[];
     const aRepasser = rows.filter(
       (e) => e.statut === "a_venir" && e.date_echeance < todayISO
     );
@@ -112,9 +126,19 @@ export function ManagerEcheances() {
     }
 
     setEcheances(
-      rows.map((e) =>
-        aRepasser.some((r) => r.id === e.id) ? { ...e, statut: "en_retard" as Statut } : e
-      )
+      rows.map((r) => {
+        const boutique = Array.isArray(r.boutiques) ? r.boutiques[0] : r.boutiques;
+        return {
+          id: r.id,
+          titre: r.titre,
+          date_echeance: r.date_echeance,
+          responsable_id: r.responsable_id,
+          delai_rappel: r.delai_rappel,
+          delai_personnalise_jours: r.delai_personnalise_jours,
+          statut: aRepasser.some((a) => a.id === r.id) ? "en_retard" : r.statut,
+          boutiqueNom: boutique?.nom ?? null,
+        };
+      })
     );
     setLoading(false);
   }, [profile]);
@@ -126,12 +150,13 @@ export function ManagerEcheances() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!profile) return;
+    if (portee === "boutique" && !selectedBoutiqueId) return;
 
     setSaving(true);
     setError(null);
 
     const { error: insertError } = await supabase.from("echeances").insert({
-      boutique_id: profile.boutique_id,
+      boutique_id: portee === "boutique" ? selectedBoutiqueId : null,
       structure_id: profile.structure_id,
       titre,
       date_echeance: dateEcheance,
@@ -153,6 +178,7 @@ export function ManagerEcheances() {
     setDelaiRappel("jour_meme");
     setDelaiPersonnaliseJours("7");
     setResponsable("aucun");
+    setPortee("structure");
     await load();
   }
 
@@ -204,6 +230,25 @@ export function ManagerEcheances() {
             className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
           />
         </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="portee" className="text-sm text-muted-foreground">
+            Portée
+          </label>
+          <select
+            id="portee"
+            value={portee}
+            onChange={(e) => setPortee(e.target.value as Portee)}
+            className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+          >
+            <option value="structure">Toute la structure</option>
+            <option value="boutique">Une boutique</option>
+          </select>
+        </div>
+
+        {portee === "boutique" && (
+          <BoutiqueSelector value={selectedBoutiqueId} onChange={setSelectedBoutiqueId} />
+        )}
 
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1">
@@ -273,7 +318,7 @@ export function ManagerEcheances() {
 
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || (portee === "boutique" && !selectedBoutiqueId)}
           className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
         >
           {saving ? "Création..." : "Créer l'échéance"}
@@ -315,11 +360,9 @@ export function ManagerEcheances() {
                 <div>
                   <p className="text-sm font-medium text-foreground">
                     {e.titre}
-                    {!e.boutique_id && (
-                      <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                        Toute la structure
-                      </span>
-                    )}
+                    <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                      {e.boutiqueNom ?? "Toute la structure"}
+                    </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(e.date_echeance)} ·{" "}

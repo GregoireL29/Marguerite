@@ -322,7 +322,9 @@ export function WidgetEcheancesProches() {
       const { data: rows } = await supabase
         .from("echeances")
         .select("id, titre, date_echeance, statut")
-        .eq("boutique_id", profile.boutique_id)
+        .or(
+          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+        )
         .neq("statut", "faite")
         .order("date_echeance", { ascending: true })
         .limit(3);

@@ -284,23 +284,31 @@ create index idx_progression_formation_module on progression_formation(module_id
 create type delai_rappel_echeance as enum ('jour_meme', '1_semaine', '1_mois', 'personnalise');
 create type statut_echeance as enum ('a_venir', 'en_retard', 'faite');
 
--- responsable_id nullable : en V1 une échéance n'est assignable qu'à
--- personne ou au manager lui-même (pas de rôle gérant actif). La colonne
--- reste une référence utilisateurs générique pour permettre l'assignation
--- croisée manager/gérant en V2 sans migration supplémentaire.
+-- responsable_id nullable : reste limité à "personne" ou l'auteur lui-même
+-- côté UI pour l'instant. La colonne reste une référence utilisateurs
+-- générique pour permettre l'assignation croisée manager/gérant plus tard
+-- sans migration supplémentaire.
+--
+-- boutique_id nullable : une échéance est soit rattachée à une boutique
+-- précise, soit à toute la structure (gérant uniquement, ex. renouvellement
+-- d'assurance globale), auquel cas structure_id est renseigné à la place.
+-- Même traitement que annonces.
 create table echeances (
   id uuid primary key default uuid_generate_v4(),
-  boutique_id uuid not null references boutiques(id) on delete cascade,
+  boutique_id uuid references boutiques(id) on delete cascade,
+  structure_id uuid references structures(id) on delete cascade,
   titre text not null,
   date_echeance date not null,
   responsable_id uuid references utilisateurs(id) on delete set null,
   delai_rappel delai_rappel_echeance not null default 'jour_meme',
   delai_personnalise_jours integer,
   statut statut_echeance not null default 'a_venir',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint echeances_scope_check check (boutique_id is not null or structure_id is not null)
 );
 
 create index idx_echeances_boutique on echeances(boutique_id);
+create index idx_echeances_structure on echeances(structure_id);
 
 create table conversations (
   id uuid primary key default uuid_generate_v4(),
@@ -504,8 +512,17 @@ create policy "acces_par_boutique" on factures_fournisseurs for all to authentic
 create policy "acces_par_boutique" on modules_formation for all to authenticated
   using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
 
-create policy "acces_par_boutique" on echeances for all to authenticated
-  using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
+-- echeances : boutique_id nullable (échéance structure entière côté
+-- gérant), même traitement que la policy acces_annonces.
+create policy "acces_echeances" on echeances for all to authenticated
+  using (
+    (boutique_id is not null and user_has_access_to_boutique(boutique_id))
+    or (boutique_id is null and structure_id is not null and user_belongs_to_structure(structure_id))
+  )
+  with check (
+    (boutique_id is not null and user_has_access_to_boutique(boutique_id))
+    or (boutique_id is null and structure_id is not null and user_belongs_to_structure(structure_id))
+  );
 
 -- annonces : boutique_id nullable (diffusion structure entière côté
 -- gérant) impose une double condition plutôt que le simple
