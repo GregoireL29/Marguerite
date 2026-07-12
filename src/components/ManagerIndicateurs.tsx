@@ -4,125 +4,28 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import {
+  type Periode,
+  PERIODES,
+  getRange,
+  getPrevAnchor,
+  getLastYearAnchor,
+  navigateAnchor,
+  formatRangeLabel,
+  formatEuros,
+  pct,
+  formatPct,
+  classify,
+  toISODate,
+} from "@/lib/indicateurs";
 
-type Periode = "jour" | "semaine" | "mois" | "annee";
 type ComparisonMode = "precedente" | "annee_precedente" | "objectif";
-
-const PERIODES: { value: Periode; label: string }[] = [
-  { value: "jour", label: "Jour" },
-  { value: "semaine", label: "Semaine" },
-  { value: "mois", label: "Mois" },
-  { value: "annee", label: "Année" },
-];
 
 const COMPARISON_OPTIONS: { value: ComparisonMode; label: string }[] = [
   { value: "precedente", label: "Période précédente" },
   { value: "annee_precedente", label: "Même période l'an dernier" },
   { value: "objectif", label: "Objectif personnalisé" },
 ];
-
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-function addDays(d: Date, n: number): Date {
-  const r = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  r.setDate(r.getDate() + n);
-  return r;
-}
-
-function getMonday(d: Date): Date {
-  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const day = date.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  return date;
-}
-
-function getRange(periode: Periode, anchor: Date): { start: Date; end: Date } {
-  if (periode === "jour") {
-    return { start: anchor, end: anchor };
-  }
-  if (periode === "semaine") {
-    const start = getMonday(anchor);
-    return { start, end: addDays(start, 6) };
-  }
-  if (periode === "mois") {
-    const start = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-    const end = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-    return { start, end };
-  }
-  return {
-    start: new Date(anchor.getFullYear(), 0, 1),
-    end: new Date(anchor.getFullYear(), 11, 31),
-  };
-}
-
-function getPrevAnchor(periode: Periode, anchor: Date): Date {
-  if (periode === "jour") return addDays(anchor, -1);
-  if (periode === "semaine") return addDays(anchor, -7);
-  if (periode === "mois") return new Date(anchor.getFullYear(), anchor.getMonth() - 1, 1);
-  return new Date(anchor.getFullYear() - 1, 0, 1);
-}
-
-function getLastYearAnchor(periode: Periode, anchor: Date): Date {
-  return new Date(anchor.getFullYear() - 1, anchor.getMonth(), anchor.getDate());
-}
-
-function navigateAnchor(periode: Periode, anchor: Date, dir: 1 | -1): Date {
-  if (periode === "jour") return addDays(anchor, dir);
-  if (periode === "semaine") return addDays(anchor, dir * 7);
-  if (periode === "mois") return new Date(anchor.getFullYear(), anchor.getMonth() + dir, 1);
-  return new Date(anchor.getFullYear() + dir, 0, 1);
-}
-
-function formatRangeLabel(periode: Periode, start: Date, end: Date): string {
-  if (periode === "jour") {
-    return start.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-    });
-  }
-  if (periode === "annee") {
-    return String(start.getFullYear());
-  }
-  return `${start.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "long",
-  })} – ${end.toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  })}`;
-}
-
-function formatEuros(n: number): string {
-  return n.toLocaleString("fr-FR", { maximumFractionDigits: 0 }) + " €";
-}
-
-function pct(current: number, previous: number): number | null {
-  if (previous <= 0) return null;
-  return ((current - previous) / previous) * 100;
-}
-
-function formatPct(p: number | null): string {
-  if (p === null) return "n/a";
-  return `${p >= 0 ? "+" : ""}${p.toFixed(1)}%`;
-}
-
-type Direction = "up" | "down" | "stable" | null;
-
-function classify(p: number | null): Direction {
-  if (p === null) return null;
-  if (p > 2) return "up";
-  if (p < -2) return "down";
-  return "stable";
-}
 
 // Règles simples de comparaison de signes/pourcentages : pas d'appel IA.
 // L'idée est d'expliquer la cause de la variation du CA (fréquentation vs
@@ -228,8 +131,9 @@ interface Objectif {
   panier_moyen_cible: number;
 }
 
-export function ManagerIndicateurs() {
+export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [periode, setPeriode] = useState<Periode>("semaine");
   const [anchor, setAnchor] = useState(() => new Date());
   const [comparisonMode, setComparisonMode] = useState<ComparisonMode>("precedente");
@@ -245,7 +149,7 @@ export function ManagerIndicateurs() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setLoading(true);
     setError(null);
 
@@ -260,7 +164,7 @@ export function ManagerIndicateurs() {
       supabase
         .from("ventes_quotidiennes")
         .select("chiffre_affaires, frequentation")
-        .eq("boutique_id", profile.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .gte("date", toISODate(start))
         .lte("date", toISODate(end)),
       comparisonMode === "objectif"
@@ -268,7 +172,7 @@ export function ManagerIndicateurs() {
         : supabase
             .from("ventes_quotidiennes")
             .select("chiffre_affaires, frequentation")
-            .eq("boutique_id", profile.boutique_id)
+            .eq("boutique_id", effectiveBoutiqueId)
             .gte("date", toISODate(refStart))
             .lte("date", toISODate(refEnd)),
       periode === "jour"
@@ -276,7 +180,7 @@ export function ManagerIndicateurs() {
         : supabase
             .from("objectifs")
             .select("id, ca_cible, panier_moyen_cible")
-            .eq("boutique_id", profile.boutique_id)
+            .eq("boutique_id", effectiveBoutiqueId)
             .eq("periode", periode)
             .eq("date_debut", toISODate(start))
             .maybeSingle(),
@@ -312,7 +216,7 @@ export function ManagerIndicateurs() {
     setPanierCible(obj ? String(obj.panier_moyen_cible) : "");
 
     setLoading(false);
-  }, [profile, periode, anchor, comparisonMode]);
+  }, [profile, effectiveBoutiqueId, periode, anchor, comparisonMode]);
 
   useEffect(() => {
     load();
@@ -326,7 +230,7 @@ export function ManagerIndicateurs() {
 
   async function handleSaveObjectif(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile || periode === "jour") return;
+    if (!profile || !effectiveBoutiqueId || periode === "jour") return;
     setSaving(true);
     setError(null);
 
@@ -334,7 +238,7 @@ export function ManagerIndicateurs() {
 
     const { error: upsertError } = await supabase.from("objectifs").upsert(
       {
-        boutique_id: profile.boutique_id,
+        boutique_id: effectiveBoutiqueId,
         periode,
         date_debut: toISODate(start),
         ca_cible: Number(caCible),

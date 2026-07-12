@@ -4,16 +4,12 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { BoutiqueSelector } from "@/components/BoutiqueSelector";
+import { toISODate } from "@/lib/indicateurs";
 
-function toISODate(d: Date): string {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-export default function SaisieVentesPage() {
+function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [date, setDate] = useState(() => toISODate(new Date()));
   const [chiffreAffaires, setChiffreAffaires] = useState("");
   const [frequentation, setFrequentation] = useState("");
@@ -24,7 +20,7 @@ export default function SaisieVentesPage() {
 
   const loadExisting = useCallback(
     async (d: string) => {
-      if (!profile) return;
+      if (!profile || !effectiveBoutiqueId) return;
       setLoading(true);
       setError(null);
       setSaved(false);
@@ -32,7 +28,7 @@ export default function SaisieVentesPage() {
       const { data, error: fetchError } = await supabase
         .from("ventes_quotidiennes")
         .select("chiffre_affaires, frequentation")
-        .eq("boutique_id", profile.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .eq("date", d)
         .maybeSingle();
 
@@ -48,7 +44,7 @@ export default function SaisieVentesPage() {
       setFrequentation(data ? String(data.frequentation) : "");
       setLoading(false);
     },
-    [profile]
+    [profile, effectiveBoutiqueId]
   );
 
   useEffect(() => {
@@ -57,7 +53,7 @@ export default function SaisieVentesPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setSaving(true);
     setError(null);
     setSaved(false);
@@ -66,7 +62,7 @@ export default function SaisieVentesPage() {
       .from("ventes_quotidiennes")
       .upsert(
         {
-          boutique_id: profile.boutique_id,
+          boutique_id: effectiveBoutiqueId,
           date,
           chiffre_affaires: Number(chiffreAffaires),
           frequentation: Number(frequentation),
@@ -165,4 +161,22 @@ export default function SaisieVentesPage() {
       </form>
     </main>
   );
+}
+
+export default function SaisieVentesPage() {
+  const profile = useUserProfile();
+  const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string | null>(null);
+
+  if (!profile) return null;
+
+  if (profile.role === "gerant") {
+    return (
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-4 pt-8">
+        <BoutiqueSelector value={selectedBoutiqueId} onChange={setSelectedBoutiqueId} />
+        {selectedBoutiqueId && <SaisieVentes boutiqueId={selectedBoutiqueId} />}
+      </div>
+    );
+  }
+
+  return <SaisieVentes />;
 }
