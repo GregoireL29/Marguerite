@@ -35,8 +35,9 @@ function toISODate(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export function ManagerTaches() {
+export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [staleTaches, setStaleTaches] = useState<TacheStale[] | null>(null);
   const [taches, setTaches] = useState<Tache[]>([]);
   const [salaries, setSalaries] = useState<Salarie[]>([]);
@@ -49,7 +50,7 @@ export function ManagerTaches() {
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setLoading(true);
     setError(null);
 
@@ -59,19 +60,19 @@ export function ManagerTaches() {
       supabase
         .from("taches")
         .select("id, titre, categorie, assigne_a, statut, boutique_id")
-        .eq("boutique_id", profile.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .eq("statut", "a_faire")
         .lt("date", todayISO),
       supabase
         .from("taches")
         .select("id, titre, categorie, assigne_a, statut, boutique_id")
-        .eq("boutique_id", profile.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .eq("date", todayISO)
         .order("created_at"),
       supabase
         .from("utilisateurs")
         .select("id, nom")
-        .eq("structure_id", profile.structure_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .order("nom"),
     ]);
 
@@ -95,7 +96,7 @@ export function ManagerTaches() {
     setTaches((todayRes.data ?? []) as Tache[]);
     setSalaries(salariesRes.data ?? []);
     setLoading(false);
-  }, [profile]);
+  }, [profile, effectiveBoutiqueId]);
 
   useEffect(() => {
     load();
@@ -135,12 +136,12 @@ export function ManagerTaches() {
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setSaving(true);
     setError(null);
 
     const { error: insertError } = await supabase.from("taches").insert({
-      boutique_id: profile.boutique_id,
+      boutique_id: effectiveBoutiqueId,
       titre: titre.trim(),
       categorie,
       assigne_a: assigneA || null,

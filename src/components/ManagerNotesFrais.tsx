@@ -62,8 +62,9 @@ async function loadNotesByStatut(
   }));
 }
 
-export function ManagerNotesFrais() {
+export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [onglet, setOnglet] = useState<Onglet>("en_attente");
   const [enAttente, setEnAttente] = useState<NoteRow[]>([]);
   const [aRembourser, setARembourser] = useState<NoteRow[]>([]);
@@ -73,14 +74,14 @@ export function ManagerNotesFrais() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile?.boutique_id) return;
+    if (!effectiveBoutiqueId) return;
     setLoading(true);
     setError(null);
 
     try {
       const [pending, validated] = await Promise.all([
-        loadNotesByStatut(profile.boutique_id, "en_attente"),
-        loadNotesByStatut(profile.boutique_id, "validee"),
+        loadNotesByStatut(effectiveBoutiqueId, "en_attente"),
+        loadNotesByStatut(effectiveBoutiqueId, "validee"),
       ]);
 
       setEnAttente(pending);
@@ -100,7 +101,7 @@ export function ManagerNotesFrais() {
     }
 
     setLoading(false);
-  }, [profile]);
+  }, [effectiveBoutiqueId]);
 
   useEffect(() => {
     load();

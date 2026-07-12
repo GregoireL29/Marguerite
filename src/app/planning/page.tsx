@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import { SalarieWeekView } from "@/components/SalarieWeekView";
+import { BoutiqueSelector } from "@/components/BoutiqueSelector";
 
 type JourKey = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
 
@@ -360,8 +361,9 @@ function generateWeekCreneaux(
   return results;
 }
 
-function ManagerPlanning() {
+function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()));
   const [viewMode, setViewMode] = useState<"semaine" | "jour">("semaine");
   const [selectedDayOffset, setSelectedDayOffset] = useState(() => {
@@ -385,26 +387,13 @@ function ManagerPlanning() {
   const [error, setError] = useState<string | null>(null);
 
   const loadAll = useCallback(async (week: Date) => {
-    setLoading(true);
-    setError(null);
-
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    const { data: currentUser, error: userError } = await supabase
-      .from("utilisateurs")
-      .select("structure_id, boutique_id")
-      .eq("auth_id", authUser?.id ?? "")
-      .maybeSingle();
-
-    if (userError || !currentUser?.boutique_id || !currentUser?.structure_id) {
-      setError(
-        userError?.message ?? "Aucune boutique associée à votre compte."
-      );
+    if (!effectiveBoutiqueId) {
       setLoading(false);
       return;
     }
+
+    setLoading(true);
+    setError(null);
 
     const [{ data: boutique, error: boutiqueError }, { data: salariesData, error: salariesError }] =
       await Promise.all([
@@ -413,12 +402,12 @@ function ManagerPlanning() {
           .select(
             "horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee"
           )
-          .eq("id", currentUser.boutique_id)
+          .eq("id", effectiveBoutiqueId)
           .single(),
         supabase
           .from("utilisateurs")
           .select("id, nom, couleur")
-          .eq("structure_id", currentUser.structure_id)
+          .eq("boutique_id", effectiveBoutiqueId)
           .order("nom"),
       ]);
 
@@ -445,7 +434,7 @@ function ManagerPlanning() {
       await supabase
         .from("plannings")
         .select("id, statut")
-        .eq("boutique_id", currentUser.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .eq("semaine_debut", semaineDebut)
         .maybeSingle();
 
@@ -462,21 +451,43 @@ function ManagerPlanning() {
       const { data: createdPlanning, error: createError } = await supabase
         .from("plannings")
         .insert({
-          boutique_id: currentUser.boutique_id,
+          boutique_id: effectiveBoutiqueId,
           semaine_debut: semaineDebut,
         })
         .select("id, statut")
         .single();
 
-      if (createError || !createdPlanning) {
+      if (createError?.code === "23505") {
+        // Une requête concurrente (ex. double appel en mode strict de
+        // développement) a déjà créé le planning de cette semaine entre le
+        // select et l'insert : on récupère la ligne existante au lieu
+        // d'échouer sur la contrainte d'unicité.
+        const { data: racedPlanning, error: raceFetchError } = await supabase
+          .from("plannings")
+          .select("id, statut")
+          .eq("boutique_id", effectiveBoutiqueId)
+          .eq("semaine_debut", semaineDebut)
+          .maybeSingle();
+
+        if (raceFetchError || !racedPlanning) {
+          setError(
+            raceFetchError?.message ?? "Erreur lors de la création du planning."
+          );
+          setLoading(false);
+          return;
+        }
+        currentPlanningId = racedPlanning.id;
+        currentStatut = racedPlanning.statut;
+      } else if (createError || !createdPlanning) {
         setError(
           createError?.message ?? "Erreur lors de la création du planning."
         );
         setLoading(false);
         return;
+      } else {
+        currentPlanningId = createdPlanning.id;
+        currentStatut = createdPlanning.statut;
       }
-      currentPlanningId = createdPlanning.id;
-      currentStatut = createdPlanning.statut;
     }
 
     if (!currentPlanningId) {
@@ -503,7 +514,7 @@ function ManagerPlanning() {
 
     setCreneaux(creneauxData ?? []);
     setLoading(false);
-  }, []);
+  }, [effectiveBoutiqueId]);
 
   useEffect(() => {
     loadAll(weekStart);
@@ -608,7 +619,7 @@ function ManagerPlanning() {
   }
 
   async function handleGenerate() {
-    if (!planningId) return;
+    if (!planningId || !effectiveBoutiqueId) return;
 
     if (creneaux.length > 0) {
       const confirmed = window.confirm(
@@ -620,28 +631,10 @@ function ManagerPlanning() {
     setGenerating(true);
     setError(null);
 
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    const { data: currentUser, error: userError } = await supabase
-      .from("utilisateurs")
-      .select("structure_id")
-      .eq("auth_id", authUser?.id ?? "")
-      .maybeSingle();
-
-    if (userError || !currentUser?.structure_id) {
-      setError(
-        userError?.message ?? "Impossible de déterminer votre structure."
-      );
-      setGenerating(false);
-      return;
-    }
-
     const { data: salariesData, error: salariesError } = await supabase
       .from("utilisateurs")
       .select("id, profils_salarie(heures_hebdo, jours_repos_fixes, disponibilites)")
-      .eq("structure_id", currentUser.structure_id);
+      .eq("boutique_id", effectiveBoutiqueId);
 
     if (salariesError) {
       setError(salariesError.message);
@@ -709,6 +702,14 @@ function ManagerPlanning() {
 
     setGenerating(false);
     await loadAll(weekStart);
+  }
+
+  if (!effectiveBoutiqueId) {
+    return (
+      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+        <p className="text-sm text-faint-foreground">Aucune boutique associée à votre compte.</p>
+      </main>
+    );
   }
 
   return (
@@ -1090,11 +1091,21 @@ function ManagerPlanning() {
 
 export default function Home() {
   const profile = useUserProfile();
+  const [selectedBoutiqueId, setSelectedBoutiqueId] = useState<string | null>(null);
 
   if (!profile) return null;
 
   if (profile.role === "salarie") {
     return <SalarieWeekView />;
+  }
+
+  if (profile.role === "gerant") {
+    return (
+      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-8">
+        <BoutiqueSelector value={selectedBoutiqueId} onChange={setSelectedBoutiqueId} />
+        {selectedBoutiqueId && <ManagerPlanning boutiqueId={selectedBoutiqueId} />}
+      </div>
+    );
   }
 
   return <ManagerPlanning />;
