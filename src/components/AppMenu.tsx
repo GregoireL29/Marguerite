@@ -31,7 +31,10 @@ interface TabItem {
   label: string;
   href: string;
   icon: (props: { className?: string }) => React.JSX.Element;
-  managerOnly?: boolean;
+  // Rôles pour lesquels cet onglet reste masqué dans le menu (la protection
+  // de route dans AppShell reste la garde-fou réel ; ceci n'est qu'un
+  // affinage de navigation).
+  hiddenForRoles?: string[];
 }
 
 interface CategoryItem {
@@ -67,7 +70,7 @@ const CATEGORIES: CategoryItem[] = [
         label: "Factures fournisseurs",
         href: "/factures-fournisseurs",
         icon: IconInvoice,
-        managerOnly: true,
+        hiddenForRoles: ["salarie"],
       },
     ],
   },
@@ -82,7 +85,7 @@ const CATEGORIES: CategoryItem[] = [
         label: "Rappels et échéances",
         href: "/echeances",
         icon: IconBell,
-        managerOnly: true,
+        hiddenForRoles: ["salarie"],
       },
     ],
   },
@@ -127,10 +130,10 @@ export function AppMenu() {
 
   if (!loaded || !session) return null;
 
-  const isSalarie = profile?.role === "salarie";
+  const role = profile?.role ?? "";
   const visibleCategories = CATEGORIES.map((cat) => ({
     ...cat,
-    tabs: cat.tabs.filter((t) => !t.managerOnly || !isSalarie),
+    tabs: cat.tabs.filter((t) => !t.hiddenForRoles?.includes(role)),
   })).filter((cat) => cat.tabs.length > 0);
 
   return (

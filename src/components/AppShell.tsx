@@ -15,7 +15,7 @@ export interface UserProfile {
   couleur: string;
   role: string;
   structure_id: string;
-  boutique_id: string;
+  boutique_id: string | null;
 }
 
 const UserProfileContext = createContext<UserProfile | null>(null);

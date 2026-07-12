@@ -3,290 +3,243 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
+import { useUserProfile } from "@/components/AppShell";
+import { BoutiqueForm } from "@/components/BoutiqueForm";
 
-type JourKey = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
-
-interface Creneau {
-  debut: string;
-  fin: string;
+interface BoutiqueRow {
+  id: string;
+  nom: string;
+  adresse: string | null;
 }
 
-type Horaires = Record<JourKey, Creneau[]>;
-
-const JOURS: { key: JourKey; label: string }[] = [
-  { key: "lun", label: "Lundi" },
-  { key: "mar", label: "Mardi" },
-  { key: "mer", label: "Mercredi" },
-  { key: "jeu", label: "Jeudi" },
-  { key: "ven", label: "Vendredi" },
-  { key: "sam", label: "Samedi" },
-  { key: "dim", label: "Dimanche" },
-];
-
-const EMPTY_HORAIRES: Horaires = {
-  lun: [],
-  mar: [],
-  mer: [],
-  jeu: [],
-  ven: [],
-  sam: [],
-  dim: [],
-};
-
-export default function BoutiquePage() {
-  const [boutiqueId, setBoutiqueId] = useState<string | null>(null);
-  const [nomBoutique, setNomBoutique] = useState("");
-  const [horaires, setHoraires] = useState<Horaires>(EMPTY_HORAIRES);
-  const [effectifOuverture, setEffectifOuverture] = useState("1");
-  const [effectifFermeture, setEffectifFermeture] = useState("1");
-  const [effectifJournee, setEffectifJournee] = useState("1");
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
-
-    const { data: currentUser, error: userError } = await supabase
-      .from("utilisateurs")
-      .select("boutique_id")
-      .eq("auth_id", authUser?.id ?? "")
-      .maybeSingle();
-
-    if (userError || !currentUser?.boutique_id) {
-      setError(
-        userError?.message ?? "Aucune boutique associée à votre compte."
-      );
-      setLoading(false);
-      return;
-    }
-
-    const { data: boutique, error: boutiqueError } = await supabase
-      .from("boutiques")
-      .select(
-        "id, nom, horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee"
-      )
-      .eq("id", currentUser.boutique_id)
-      .single();
-
-    if (boutiqueError || !boutique) {
-      setError(boutiqueError?.message ?? "Boutique introuvable.");
-      setLoading(false);
-      return;
-    }
-
-    setBoutiqueId(boutique.id);
-    setNomBoutique(boutique.nom);
-    setHoraires({ ...EMPTY_HORAIRES, ...(boutique.horaires ?? {}) });
-    setEffectifOuverture(String(boutique.effectif_min_ouverture));
-    setEffectifFermeture(String(boutique.effectif_min_fermeture));
-    setEffectifJournee(String(boutique.effectif_min_journee));
-    setLoading(false);
-  }, []);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  function addCreneau(jour: JourKey) {
-    setHoraires((h) => ({
-      ...h,
-      [jour]: [...h[jour], { debut: "09:00", fin: "19:00" }],
-    }));
-  }
-
-  function removeCreneau(jour: JourKey, index: number) {
-    setHoraires((h) => ({
-      ...h,
-      [jour]: h[jour].filter((_, i) => i !== index),
-    }));
-  }
-
-  function updateCreneau(
-    jour: JourKey,
-    index: number,
-    field: "debut" | "fin",
-    value: string
-  ) {
-    setHoraires((h) => ({
-      ...h,
-      [jour]: h[jour].map((c, i) =>
-        i === index ? { ...c, [field]: value } : c
-      ),
-    }));
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!boutiqueId) return;
-    setSaving(true);
-    setError(null);
-    setSaved(false);
-
-    const { error: updateError } = await supabase
-      .from("boutiques")
-      .update({
-        horaires,
-        effectif_min_ouverture: Number(effectifOuverture),
-        effectif_min_fermeture: Number(effectifFermeture),
-        effectif_min_journee: Number(effectifJournee),
-      })
-      .eq("id", boutiqueId);
-
-    setSaving(false);
-
-    if (updateError) {
-      setError(updateError.message);
-      return;
-    }
-
-    setSaved(true);
-  }
-
-  if (loading) {
-    return (
-      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-        <p className="text-sm text-muted-foreground">Chargement...</p>
-      </main>
-    );
-  }
-
+function ManagerBoutique({ boutiqueId }: { boutiqueId: string }) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div>
         <Link href="/planning" className="text-sm text-muted-foreground hover:underline">
           &larr; Planning
         </Link>
-        <h1 className="mt-1 text-xl font-medium text-foreground">
-          Ma boutique{nomBoutique ? ` — ${nomBoutique}` : ""}
-        </h1>
+        <h1 className="mt-1 text-xl font-medium text-foreground">Ma boutique</h1>
+      </div>
+
+      <BoutiqueForm boutiqueId={boutiqueId} />
+    </main>
+  );
+}
+
+function GerantBoutiques() {
+  const profile = useUserProfile();
+  const [boutiques, setBoutiques] = useState<BoutiqueRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [nom, setNom] = useState("");
+  const [adresse, setAdresse] = useState("");
+  const [heureOuverture, setHeureOuverture] = useState("09:00");
+  const [heureFermeture, setHeureFermeture] = useState("19:00");
+  const [creating, setCreating] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!profile) return;
+    setLoading(true);
+    setError(null);
+
+    const { data, error: loadError } = await supabase
+      .from("boutiques")
+      .select("id, nom, adresse")
+      .eq("structure_id", profile.structure_id)
+      .order("nom");
+
+    if (loadError) {
+      setError(loadError.message);
+      setLoading(false);
+      return;
+    }
+
+    setBoutiques(data ?? []);
+    setLoading(false);
+  }, [profile]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!profile) return;
+    setCreating(true);
+    setError(null);
+
+    const boutiqueId = crypto.randomUUID();
+    const creneauOuverture = { debut: heureOuverture, fin: heureFermeture };
+    const horaires = {
+      lun: [creneauOuverture],
+      mar: [creneauOuverture],
+      mer: [creneauOuverture],
+      jeu: [creneauOuverture],
+      ven: [creneauOuverture],
+      sam: [creneauOuverture],
+      dim: [],
+    };
+
+    const { error: insertError } = await supabase.from("boutiques").insert({
+      id: boutiqueId,
+      structure_id: profile.structure_id,
+      nom,
+      adresse: adresse || null,
+      horaires,
+    });
+
+    setCreating(false);
+
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+
+    setNom("");
+    setAdresse("");
+    setHeureOuverture("09:00");
+    setHeureFermeture("19:00");
+    setShowCreate(false);
+    await load();
+  }
+
+  if (!profile) return null;
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <Link href="/planning" className="text-sm text-muted-foreground hover:underline">
+            &larr; Planning
+          </Link>
+          <h1 className="mt-1 text-xl font-medium text-foreground">Mes boutiques</h1>
+        </div>
+        <button
+          onClick={() => setShowCreate((s) => !s)}
+          className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground"
+        >
+          {showCreate ? "Annuler" : "+ Nouvelle boutique"}
+        </button>
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-      {saved && <p className="text-sm text-green-600 dark:text-green-400">Enregistré.</p>}
 
-      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-        <div className="flex flex-col divide-y divide-border">
-          {JOURS.map(({ key, label }) => (
-            <div key={key} className="flex flex-col gap-2 py-3">
+      {showCreate && (
+        <form
+          onSubmit={handleCreate}
+          className="flex flex-col gap-4 rounded-md border border-border p-4"
+        >
+          <div className="flex flex-col gap-1">
+            <label htmlFor="nom_boutique" className="text-sm text-muted-foreground">
+              Nom de la boutique
+            </label>
+            <input
+              id="nom_boutique"
+              required
+              value={nom}
+              onChange={(e) => setNom(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="adresse_boutique" className="text-sm text-muted-foreground">
+              Adresse (optionnel)
+            </label>
+            <input
+              id="adresse_boutique"
+              value={adresse}
+              onChange={(e) => setAdresse(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+
+          <div className="flex gap-3">
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="heure_ouverture" className="text-sm text-muted-foreground">
+                Ouverture
+              </label>
+              <input
+                id="heure_ouverture"
+                type="time"
+                value={heureOuverture}
+                onChange={(e) => setHeureOuverture(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+            <div className="flex flex-1 flex-col gap-1">
+              <label htmlFor="heure_fermeture" className="text-sm text-muted-foreground">
+                Fermeture
+              </label>
+              <input
+                id="heure_fermeture"
+                type="time"
+                value={heureFermeture}
+                onChange={(e) => setHeureFermeture(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={creating}
+            className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+          >
+            {creating ? "Création..." : "Créer la boutique"}
+          </button>
+        </form>
+      )}
+
+      {loading ? (
+        <p className="text-sm text-muted-foreground">Chargement...</p>
+      ) : boutiques.length === 0 ? (
+        <p className="text-sm text-faint-foreground">Aucune boutique pour l&apos;instant.</p>
+      ) : (
+        <ul className="flex flex-col divide-y divide-border">
+          {boutiques.map((b) => (
+            <li key={b.id} className="flex flex-col gap-3 py-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">
-                  {label}
-                </span>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{b.nom}</p>
+                  {b.adresse && (
+                    <p className="text-xs text-muted-foreground">{b.adresse}</p>
+                  )}
+                </div>
                 <button
-                  type="button"
-                  onClick={() => addCreneau(key)}
-                  className="text-xs text-muted-foreground hover:underline"
+                  onClick={() => setSelectedId(selectedId === b.id ? null : b.id)}
+                  className="text-sm text-muted-foreground hover:underline"
                 >
-                  + Ajouter un créneau
+                  {selectedId === b.id ? "Fermer" : "Modifier"}
                 </button>
               </div>
 
-              {horaires[key].length === 0 && (
-                <p className="text-xs text-faint-foreground">Fermé</p>
-              )}
-
-              {horaires[key].map((c, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={c.debut}
-                    onChange={(e) =>
-                      updateCreneau(key, i, "debut", e.target.value)
-                    }
-                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
-                  />
-                  <span className="text-sm text-faint-foreground">&ndash;</span>
-                  <input
-                    type="time"
-                    value={c.fin}
-                    onChange={(e) =>
-                      updateCreneau(key, i, "fin", e.target.value)
-                    }
-                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeCreneau(key, i)}
-                    className="text-sm text-faint-foreground hover:text-red-600 dark:text-red-400 dark:hover:text-red-400"
-                    aria-label="Supprimer ce créneau"
-                  >
-                    &#10005;
-                  </button>
+              {selectedId === b.id && (
+                <div className="rounded-md border border-border p-4">
+                  <BoutiqueForm boutiqueId={b.id} onSaved={load} />
                 </div>
-              ))}
-            </div>
+              )}
+            </li>
           ))}
-        </div>
-
-        <div className="flex gap-4">
-          <div className="flex flex-1 flex-col gap-1">
-            <label
-              htmlFor="effectif_ouverture"
-              className="text-sm text-muted-foreground"
-            >
-              Effectif minimum à l&apos;ouverture
-            </label>
-            <input
-              id="effectif_ouverture"
-              type="number"
-              min="0"
-              required
-              value={effectifOuverture}
-              onChange={(e) => setEffectifOuverture(e.target.value)}
-              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label
-              htmlFor="effectif_fermeture"
-              className="text-sm text-muted-foreground"
-            >
-              Effectif minimum à la fermeture
-            </label>
-            <input
-              id="effectif_fermeture"
-              type="number"
-              min="0"
-              required
-              value={effectifFermeture}
-              onChange={(e) => setEffectifFermeture(e.target.value)}
-              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-          </div>
-          <div className="flex flex-1 flex-col gap-1">
-            <label
-              htmlFor="effectif_journee"
-              className="text-sm text-muted-foreground"
-            >
-              Effectif minimum en journée
-            </label>
-            <input
-              id="effectif_journee"
-              type="number"
-              min="0"
-              required
-              value={effectifJournee}
-              onChange={(e) => setEffectifJournee(e.target.value)}
-              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-            />
-          </div>
-        </div>
-
-        <button
-          type="submit"
-          disabled={saving}
-          className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
-        >
-          {saving ? "Enregistrement..." : "Enregistrer"}
-        </button>
-      </form>
+        </ul>
+      )}
     </main>
   );
+}
+
+export default function BoutiquePage() {
+  const profile = useUserProfile();
+
+  if (!profile) return null;
+
+  if (profile.role === "gerant") {
+    return <GerantBoutiques />;
+  }
+
+  if (!profile.boutique_id) return null;
+
+  return <ManagerBoutique boutiqueId={profile.boutique_id} />;
 }

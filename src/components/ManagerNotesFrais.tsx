@@ -73,7 +73,7 @@ export function ManagerNotesFrais() {
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!profile?.boutique_id) return;
     setLoading(true);
     setError(null);
 
