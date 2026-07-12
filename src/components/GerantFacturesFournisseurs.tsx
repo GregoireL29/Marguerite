@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { BoutiqueSelector } from "@/components/BoutiqueSelector";
 
 const CATEGORIES = ["Marchandises", "Fournitures", "Services", "Loyer", "Autre"];
 
@@ -12,6 +13,7 @@ interface Fournisseur {
   siren: string | null;
   adresse: string | null;
   contact_commercial: string | null;
+  boutique_id: string;
 }
 
 interface Facture {
@@ -24,6 +26,7 @@ interface Facture {
   categorie: string;
   fichier_url: string;
   date_facture: string;
+  boutiqueNom: string;
 }
 
 function toISODate(d: Date): string {
@@ -50,7 +53,7 @@ function formatEuros(n: number): string {
   return n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-export function ManagerFacturesFournisseurs() {
+export function GerantFacturesFournisseurs() {
   const profile = useUserProfile();
   const [onglet, setOnglet] = useState<"deposer" | "consulter">("deposer");
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
@@ -59,6 +62,7 @@ export function ManagerFacturesFournisseurs() {
   const [error, setError] = useState<string | null>(null);
 
   // Formulaire de dépôt
+  const [depotBoutiqueId, setDepotBoutiqueId] = useState<string | null>(null);
   const [nouveauFournisseur, setNouveauFournisseur] = useState(false);
   const [fournisseurId, setFournisseurId] = useState("");
   const [nouveauNom, setNouveauNom] = useState("");
@@ -83,19 +87,19 @@ export function ManagerFacturesFournisseurs() {
     setLoading(true);
     setError(null);
 
+    // Pas de filtre boutique_id : la RLS restreint déjà aux fournisseurs et
+    // factures de toutes les boutiques de la structure.
     const [{ data: fournisseursData, error: fournisseursError }, { data: facturesData, error: facturesError }] =
       await Promise.all([
         supabase
           .from("fournisseurs")
-          .select("id, nom, siren, adresse, contact_commercial")
-          .eq("boutique_id", profile.boutique_id)
+          .select("id, nom, siren, adresse, contact_commercial, boutique_id")
           .order("nom"),
         supabase
           .from("factures_fournisseurs")
           .select(
-            "id, fournisseur_id, descriptif, montant_ht, taux_tva, categorie, fichier_url, date_facture, fournisseurs(nom)"
+            "id, fournisseur_id, descriptif, montant_ht, taux_tva, categorie, fichier_url, date_facture, fournisseurs(nom), boutiques(nom)"
           )
-          .eq("boutique_id", profile.boutique_id)
           .order("date_facture", { ascending: false }),
       ]);
 
@@ -122,39 +126,53 @@ export function ManagerFacturesFournisseurs() {
       fichier_url: string;
       date_facture: string;
       fournisseurs: { nom: string } | { nom: string }[] | null;
+      boutiques: { nom: string } | { nom: string }[] | null;
     }[];
 
     setFactures(
-      rows.map((r) => ({
-        id: r.id,
-        fournisseur_id: r.fournisseur_id,
-        descriptif: r.descriptif,
-        montant_ht: Number(r.montant_ht),
-        taux_tva: Number(r.taux_tva),
-        categorie: r.categorie,
-        fichier_url: r.fichier_url,
-        date_facture: r.date_facture,
-        fournisseur_nom: Array.isArray(r.fournisseurs)
-          ? (r.fournisseurs[0]?.nom ?? "?")
-          : (r.fournisseurs?.nom ?? "?"),
-      }))
+      rows.map((r) => {
+        const fournisseur = Array.isArray(r.fournisseurs) ? r.fournisseurs[0] : r.fournisseurs;
+        const boutique = Array.isArray(r.boutiques) ? r.boutiques[0] : r.boutiques;
+        return {
+          id: r.id,
+          fournisseur_id: r.fournisseur_id,
+          descriptif: r.descriptif,
+          montant_ht: Number(r.montant_ht),
+          taux_tva: Number(r.taux_tva),
+          categorie: r.categorie,
+          fichier_url: r.fichier_url,
+          date_facture: r.date_facture,
+          fournisseur_nom: fournisseur?.nom ?? "?",
+          boutiqueNom: boutique?.nom ?? "?",
+        };
+      })
     );
 
-    if (!fournisseurId && fournisseursData && fournisseursData.length > 0) {
-      setFournisseurId(fournisseursData[0].id);
-    }
-
     setLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
 
   useEffect(() => {
     load();
   }, [load]);
 
+  // Fournisseurs de la boutique de dépôt sélectionnée uniquement : un
+  // fournisseur est une fiche par boutique (voir groupement par nom
+  // ci-dessous côté consultation), le formulaire de dépôt reste donc
+  // scopé à une boutique précise comme côté manager.
+  const fournisseursDepot = useMemo(
+    () => fournisseurs.filter((f) => f.boutique_id === depotBoutiqueId),
+    [fournisseurs, depotBoutiqueId]
+  );
+
+  useEffect(() => {
+    if (!fournisseurId && fournisseursDepot.length > 0) {
+      setFournisseurId(fournisseursDepot[0].id);
+    }
+  }, [fournisseursDepot, fournisseurId]);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile || !file) return;
+    if (!profile || !file || !depotBoutiqueId) return;
     if (nouveauFournisseur && !nouveauNom.trim()) return;
     if (!nouveauFournisseur && !fournisseurId) return;
 
@@ -167,7 +185,7 @@ export function ManagerFacturesFournisseurs() {
       const { data: newFournisseur, error: insertFournisseurError } = await supabase
         .from("fournisseurs")
         .insert({
-          boutique_id: profile.boutique_id,
+          boutique_id: depotBoutiqueId,
           nom: nouveauNom.trim(),
           siren: nouveauSiren.trim() || null,
           adresse: nouveauAdresse.trim() || null,
@@ -184,7 +202,7 @@ export function ManagerFacturesFournisseurs() {
       resolvedFournisseurId = newFournisseur.id;
     }
 
-    const path = `${profile.boutique_id}/factures-fournisseurs/${resolvedFournisseurId}/${Date.now()}_${file.name}`;
+    const path = `${depotBoutiqueId}/factures-fournisseurs/${resolvedFournisseurId}/${Date.now()}_${file.name}`;
 
     const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
 
@@ -196,7 +214,7 @@ export function ManagerFacturesFournisseurs() {
 
     const { error: insertFactureError } = await supabase.from("factures_fournisseurs").insert({
       fournisseur_id: resolvedFournisseurId,
-      boutique_id: profile.boutique_id,
+      boutique_id: depotBoutiqueId,
       descriptif,
       montant_ht: Number(montantHt),
       taux_tva: Number(tauxTva),
@@ -212,6 +230,7 @@ export function ManagerFacturesFournisseurs() {
     }
 
     setNouveauFournisseur(false);
+    setFournisseurId("");
     setNouveauNom("");
     setNouveauSiren("");
     setNouveauAdresse("");
@@ -253,11 +272,45 @@ export function ManagerFacturesFournisseurs() {
     return { ht, ttc };
   }, [factures]);
 
-  const pinnedFournisseur = useMemo(() => {
+  // Un même fournisseur réel est enregistré une fois par boutique (une
+  // ligne fournisseurs par boutique_id) : on consolide donc par nom
+  // normalisé plutôt que par fournisseur_id, sans quoi le total d'un
+  // fournisseur livrant plusieurs boutiques serait fragmenté.
+  const nomsFournisseursUniques = useMemo(() => {
+    const vus = new Set<string>();
+    const noms: string[] = [];
+    for (const f of fournisseurs) {
+      const key = f.nom.trim().toLowerCase();
+      if (!vus.has(key)) {
+        vus.add(key);
+        noms.push(f.nom);
+      }
+    }
+    return noms;
+  }, [fournisseurs]);
+
+  const pinnedGroup = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return null;
-    return fournisseurs.find((f) => f.nom.toLowerCase() === term) ?? null;
-  }, [fournisseurs, searchTerm]);
+    const matches = fournisseurs.filter((f) => f.nom.trim().toLowerCase() === term);
+    if (matches.length === 0) return null;
+    const boutiquesNoms = Array.from(
+      new Set(
+        matches
+          .map((f) => factures.find((fa) => fa.fournisseur_id === f.id)?.boutiqueNom)
+          .filter((n): n is string => !!n)
+      )
+    );
+    const reference = matches.find((f) => f.siren || f.adresse || f.contact_commercial) ?? matches[0];
+    return {
+      nom: reference.nom,
+      siren: reference.siren,
+      adresse: reference.adresse,
+      contact: reference.contact_commercial,
+      fournisseurIds: matches.map((f) => f.id),
+      boutiquesNoms,
+    };
+  }, [fournisseurs, factures, searchTerm]);
 
   const filteredFactures = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -265,20 +318,21 @@ export function ManagerFacturesFournisseurs() {
     return factures.filter((f) => f.fournisseur_nom.toLowerCase().includes(term));
   }, [factures, searchTerm]);
 
-  const totalFournisseur12Mois = useMemo(() => {
-    if (!pinnedFournisseur) return null;
+  const totalGroupe12Mois = useMemo(() => {
+    if (!pinnedGroup) return null;
     const seuil = toISODate(new Date(Date.now() - 365 * 86400000));
     const recentes = factures.filter(
-      (f) => f.fournisseur_id === pinnedFournisseur.id && f.date_facture >= seuil
+      (f) => pinnedGroup.fournisseurIds.includes(f.fournisseur_id) && f.date_facture >= seuil
     );
     if (recentes.length === 0) return null;
     return recentes.reduce((s, f) => s + montantTtc(f), 0);
-  }, [factures, pinnedFournisseur]);
+  }, [factures, pinnedGroup]);
 
   function exporterCsv() {
-    const header = ["Date", "Fournisseur", "Montant HT", "TVA (%)", "Montant TTC", "Catégorie"];
+    const header = ["Date", "Boutique", "Fournisseur", "Montant HT", "TVA (%)", "Montant TTC", "Catégorie"];
     const rows = filteredFactures.map((f) => [
       f.date_facture,
+      f.boutiqueNom,
       f.fournisseur_nom,
       f.montant_ht.toFixed(2),
       f.taux_tva.toFixed(2),
@@ -331,6 +385,15 @@ export function ManagerFacturesFournisseurs() {
         >
           <p className="text-sm font-medium text-foreground">Nouvelle facture</p>
 
+          <BoutiqueSelector
+            value={depotBoutiqueId}
+            onChange={(id) => {
+              setDepotBoutiqueId(id);
+              setFournisseurId("");
+              setNouveauFournisseur(false);
+            }}
+          />
+
           <div className="flex flex-col gap-2">
             <label className="text-sm text-muted-foreground">Fournisseur</label>
             {!nouveauFournisseur ? (
@@ -340,8 +403,8 @@ export function ManagerFacturesFournisseurs() {
                   onChange={(e) => setFournisseurId(e.target.value)}
                   className="flex-1 rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                 >
-                  {fournisseurs.length === 0 && <option value="">Aucun fournisseur</option>}
-                  {fournisseurs.map((f) => (
+                  {fournisseursDepot.length === 0 && <option value="">Aucun fournisseur</option>}
+                  {fournisseursDepot.map((f) => (
                     <option key={f.id} value={f.id}>
                       {f.nom}
                     </option>
@@ -494,7 +557,7 @@ export function ManagerFacturesFournisseurs() {
 
           <button
             type="submit"
-            disabled={saving || !file}
+            disabled={saving || !file || !depotBoutiqueId}
             className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
           >
             {saving ? "Envoi..." : "Déposer la facture"}
@@ -504,7 +567,7 @@ export function ManagerFacturesFournisseurs() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div>
-              <p className="text-sm text-muted-foreground">Total du mois</p>
+              <p className="text-sm text-muted-foreground">Total du mois (toutes boutiques)</p>
               <p className="text-lg font-medium text-foreground">
                 {formatEuros(totalMois.ttc)} € TTC
               </p>
@@ -532,27 +595,33 @@ export function ManagerFacturesFournisseurs() {
               className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
             <datalist id="fournisseurs-datalist">
-              {fournisseurs.map((f) => (
-                <option key={f.id} value={f.nom} />
+              {nomsFournisseursUniques.map((nom) => (
+                <option key={nom} value={nom} />
               ))}
             </datalist>
           </div>
 
-          {pinnedFournisseur && (
+          {pinnedGroup && (
             <div className="flex flex-col gap-1 rounded-lg border border-accent p-4">
-              <p className="text-sm font-medium text-foreground">{pinnedFournisseur.nom}</p>
+              <p className="text-sm font-medium text-foreground">{pinnedGroup.nom}</p>
               <p className="text-xs text-muted-foreground">
-                SIREN : {pinnedFournisseur.siren ?? "Non renseigné"}
+                SIREN : {pinnedGroup.siren ?? "Non renseigné"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Adresse : {pinnedFournisseur.adresse ?? "Non renseignée"}
+                Adresse : {pinnedGroup.adresse ?? "Non renseignée"}
               </p>
               <p className="text-xs text-muted-foreground">
-                Contact commercial : {pinnedFournisseur.contact_commercial ?? "Non renseigné"}
+                Contact commercial : {pinnedGroup.contact ?? "Non renseigné"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Boutiques livrées :{" "}
+                {pinnedGroup.boutiquesNoms.length > 0
+                  ? pinnedGroup.boutiquesNoms.join(", ")
+                  : "Aucune facture enregistrée"}
               </p>
               <p className="mt-1 text-sm text-foreground">
-                {totalFournisseur12Mois !== null
-                  ? `Total facturé sur 12 mois : ${formatEuros(totalFournisseur12Mois)} € TTC`
+                {totalGroupe12Mois !== null
+                  ? `Total facturé sur 12 mois (toutes boutiques) : ${formatEuros(totalGroupe12Mois)} € TTC`
                   : "Aucune facture sur les 12 derniers mois."}
               </p>
             </div>
@@ -569,6 +638,9 @@ export function ManagerFacturesFournisseurs() {
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {f.fournisseur_nom} — {formatEuros(f.montant_ht)} € HT
+                      <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        {f.boutiqueNom}
+                      </span>
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {f.categorie} · {formatDate(f.date_facture)} · TVA {f.taux_tva}% ·{" "}
