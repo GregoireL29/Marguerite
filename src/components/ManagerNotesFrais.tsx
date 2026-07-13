@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import { SalarieNotesFrais } from "@/components/SalarieNotesFrais";
+import { IconReceipt } from "@/components/icons/MenuIcons";
 
 interface NoteRow {
   id: string;
@@ -203,15 +204,19 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
         ) : (
           <ul className="flex flex-col divide-y divide-border">
             {enAttente.map((n) => (
-              <li key={n.id} className="flex gap-3 py-4">
+              <li key={n.id} className="flex gap-4 py-4">
                 {previews[n.id] && (
-                  <button onClick={() => ouvrirTicket(n.ticket_url)} className="shrink-0">
+                  <button
+                    onClick={() => ouvrirTicket(n.ticket_url)}
+                    className="flex shrink-0 flex-col items-center gap-1"
+                  >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={previews[n.id]}
                       alt="Aperçu du ticket"
-                      className="h-20 w-20 rounded-md border border-border object-cover"
+                      className="h-20 w-20 rounded-md border border-border object-cover shadow-sm transition-opacity hover:opacity-80"
                     />
+                    <span className="text-[10px] text-faint-foreground">Ticket</span>
                   </button>
                 )}
                 <div className="flex flex-1 flex-col gap-1">
@@ -262,8 +267,9 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
                 <p className="text-sm text-muted-foreground">{n.descriptif}</p>
                 <button
                   onClick={() => ouvrirTicket(n.ticket_url)}
-                  className="text-xs text-muted-foreground hover:underline"
+                  className="mt-1.5 inline-flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-border/40"
                 >
+                  <IconReceipt className="h-3.5 w-3.5 shrink-0" />
                   Voir le ticket
                 </button>
               </div>
