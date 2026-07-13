@@ -184,6 +184,17 @@ export default function EquipePage() {
     await navigator.clipboard.writeText(link);
   }
 
+  // Ouvre le client mail par défaut du manager avec le message pré-rempli :
+  // pas d'envoi automatisé côté serveur pour cette première version, un
+  // envoi à la demande via mailto suffit.
+  function buildInviteMailto(salarie: Salarie, link: string): string {
+    const subject = "Invitation à rejoindre Marguerite";
+    const body = `Bonjour ${salarie.nom},\n\nVoici votre lien d'invitation pour rejoindre votre espace Marguerite :\n${link}\n\nCe lien expire dans 7 jours.`;
+    return `mailto:${salarie.email}?subject=${encodeURIComponent(
+      subject
+    )}&body=${encodeURIComponent(body)}`;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -392,6 +403,12 @@ export default function EquipePage() {
                       >
                         Copier
                       </button>
+                      <a
+                        href={buildInviteMailto(s, link)}
+                        className="shrink-0 rounded-md border border-border px-2 py-1 text-xs font-medium text-foreground hover:bg-border/40"
+                      >
+                        Envoyer par email
+                      </a>
                     </div>
                   )}
                 </li>
