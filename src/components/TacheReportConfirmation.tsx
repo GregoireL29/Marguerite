@@ -24,13 +24,25 @@ function toISODate(d: Date): string {
 export function TacheReportConfirmation({
   taches,
   onDone,
+  reportToDate,
+  embedded = false,
 }: {
   taches: TacheStale[];
   onDone: () => void;
+  // Date (ISO) à laquelle une tâche "pas faite" est reportée. Par défaut
+  // aujourd'hui (cas des tâches en retard, reportées au jour où on les
+  // traite) ; la routine de fin de journée passe demain pour rouler les
+  // tâches du jour même vers le lendemain.
+  reportToDate?: string;
+  // Insère le contenu sans son propre <main>/titre, pour s'intégrer dans
+  // un écran parent qui fournit déjà son propre titre (routine de fin de
+  // journée).
+  embedded?: boolean;
 }) {
   const [remaining, setRemaining] = useState(taches);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const targetDate = reportToDate ?? toISODate(new Date());
 
   async function resolve(t: TacheStale, faite: boolean) {
     setProcessingId(t.id);
@@ -64,7 +76,7 @@ export function TacheReportConfirmation({
         titre: t.titre,
         categorie: t.categorie,
         assigne_a: t.assigne_a,
-        date: toISODate(new Date()),
+        date: targetDate,
       });
 
       if (insertError) {
@@ -80,18 +92,8 @@ export function TacheReportConfirmation({
     if (next.length === 0) onDone();
   }
 
-  return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <div>
-        <h1 className="text-xl font-medium text-foreground">
-          Tâches non cochées
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Ces tâches n&apos;ont pas été cochées comme faites. Ont-elles
-          vraiment été réalisées ?
-        </p>
-      </div>
-
+  const list = (
+    <>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <ul className="flex flex-col divide-y divide-border">
@@ -117,6 +119,25 @@ export function TacheReportConfirmation({
           </li>
         ))}
       </ul>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="flex flex-col gap-3">{list}</div>;
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <div>
+        <h1 className="text-xl font-medium text-foreground">
+          Tâches non cochées
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Ces tâches n&apos;ont pas été cochées comme faites. Ont-elles
+          vraiment été réalisées ?
+        </p>
+      </div>
+      {list}
     </main>
   );
 }

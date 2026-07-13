@@ -6,6 +6,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase/client";
 import { AppMenu } from "@/components/AppMenu";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
+import { EndOfDayNotifier } from "@/components/EndOfDayNotifier";
 
 type Status = "loading" | "logged-out" | "onboarding" | "ready";
 
@@ -134,6 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <UserProfileContext.Provider value={profile}>
       {status === "ready" && <AppMenu />}
+      {status === "ready" && <EndOfDayNotifier />}
       {isBlockedRoute ? null : children}
     </UserProfileContext.Provider>
   );

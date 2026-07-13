@@ -157,6 +157,14 @@ export function IconPeople({ className }: IconProps) {
   );
 }
 
+export function IconMoon({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M15.5 4.5a8 8 0 1 0 4 12.5 6.5 6.5 0 0 1-4-12.5z" />
+    </svg>
+  );
+}
+
 export function IconChevronDown({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
