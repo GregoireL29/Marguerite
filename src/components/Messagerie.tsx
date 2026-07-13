@@ -428,7 +428,7 @@ export function Messagerie() {
             <li key={c.id}>
               <button
                 onClick={() => ouvrirConversation(c.id)}
-                className="flex w-full flex-col items-start gap-0.5 py-3 text-left hover:bg-border/40"
+                className="flex w-full flex-col items-start gap-0.5 rounded-lg px-3 py-3 text-left hover:bg-border/40"
               >
                 <div className="flex w-full items-center justify-between">
                   <p className="text-sm font-medium text-foreground">
