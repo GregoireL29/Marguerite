@@ -704,6 +704,86 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
     await loadAll(weekStart);
   }
 
+  function renderJourCard(jour: { key: JourKey; label: string; offset: number }) {
+    const { key, label, offset } = jour;
+    const date = addDays(weekStart, offset);
+    const dateISO = toISODate(date);
+    const dayCreneaux = creneauxByDay[dateISO] ?? [];
+    const openBlocks = horaires[key] ?? [];
+    const buckets = computeBuckets(
+      openBlocks,
+      dayCreneaux,
+      effectifOuverture,
+      effectifJournee,
+      effectifFermeture
+    );
+    const hasGap = buckets.some((b) => b.actual < b.required);
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div>
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
+        </div>
+
+        {buckets.length > 0 && (
+          <div
+            className="flex h-2 w-full max-w-md overflow-hidden rounded"
+            title="Couverture par rapport aux effectifs minimums"
+          >
+            {buckets.map((b, i) => (
+              <div
+                key={i}
+                title={`${minutesToTime(b.start)}–${minutesToTime(
+                  b.end
+                )} : ${b.actual}/${b.required}`}
+                className={`flex-1 ${
+                  b.actual < b.required ? "bg-red-400" : "bg-green-200"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {hasGap && (
+          <p className="text-xs font-medium text-red-600 dark:text-red-400">
+            Sous-effectif
+          </p>
+        )}
+
+        <div className="flex max-w-md flex-col gap-2">
+          {dayCreneaux.length === 0 ? (
+            <p className="text-sm text-faint-foreground">
+              Aucun créneau ce jour-là.
+            </p>
+          ) : (
+            dayCreneaux.map((c) => {
+              const salarie = salariesById[c.utilisateur_id];
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => startEdit(c)}
+                  className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-white"
+                  style={{ backgroundColor: salarie?.couleur ?? "#999" }}
+                >
+                  {salarie?.nom ?? "?"} — {c.heure_debut.slice(0, 5)}–
+                  {c.heure_fin.slice(0, 5)}
+                </button>
+              );
+            })
+          )}
+        </div>
+
+        <button
+          onClick={() => startCreate(offset)}
+          className="self-start text-sm text-faint-foreground hover:text-foreground"
+        >
+          + Ajouter
+        </button>
+      </div>
+    );
+  }
+
   if (!effectiveBoutiqueId) {
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
@@ -809,85 +889,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
               ))}
             </div>
 
-            {(() => {
-              const { key, label, offset } = JOURS[selectedDayOffset];
-              const date = addDays(weekStart, offset);
-              const dateISO = toISODate(date);
-              const dayCreneaux = creneauxByDay[dateISO] ?? [];
-              const openBlocks = horaires[key] ?? [];
-              const buckets = computeBuckets(
-                openBlocks,
-                dayCreneaux,
-                effectifOuverture,
-                effectifJournee,
-                effectifFermeture
-              );
-              const hasGap = buckets.some((b) => b.actual < b.required);
-
-              return (
-                <div className="flex flex-col gap-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{label}</p>
-                    <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
-                  </div>
-
-                  {buckets.length > 0 && (
-                    <div
-                      className="flex h-2 w-full max-w-md overflow-hidden rounded"
-                      title="Couverture par rapport aux effectifs minimums"
-                    >
-                      {buckets.map((b, i) => (
-                        <div
-                          key={i}
-                          title={`${minutesToTime(b.start)}–${minutesToTime(
-                            b.end
-                          )} : ${b.actual}/${b.required}`}
-                          className={`flex-1 ${
-                            b.actual < b.required ? "bg-red-400" : "bg-green-200"
-                          }`}
-                        />
-                      ))}
-                    </div>
-                  )}
-
-                  {hasGap && (
-                    <p className="text-xs font-medium text-red-600 dark:text-red-400">
-                      Sous-effectif
-                    </p>
-                  )}
-
-                  <div className="flex max-w-md flex-col gap-2">
-                    {dayCreneaux.length === 0 ? (
-                      <p className="text-sm text-faint-foreground">
-                        Aucun créneau ce jour-là.
-                      </p>
-                    ) : (
-                      dayCreneaux.map((c) => {
-                        const salarie = salariesById[c.utilisateur_id];
-                        return (
-                          <button
-                            key={c.id}
-                            onClick={() => startEdit(c)}
-                            className="w-full rounded-md px-3 py-2 text-left text-sm font-medium text-white"
-                            style={{ backgroundColor: salarie?.couleur ?? "#999" }}
-                          >
-                            {salarie?.nom ?? "?"} — {c.heure_debut.slice(0, 5)}–
-                            {c.heure_fin.slice(0, 5)}
-                          </button>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  <button
-                    onClick={() => startCreate(offset)}
-                    className="self-start text-sm text-faint-foreground hover:text-foreground"
-                  >
-                    + Ajouter
-                  </button>
-                </div>
-              );
-            })()}
+            {renderJourCard(JOURS[selectedDayOffset])}
           </div>
         ))}
 
@@ -895,7 +897,11 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
         (loading ? (
           <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
-          <div className="flex gap-3 overflow-x-auto pb-2">
+          <>
+            {/* Grille horizontale 7 colonnes, réservée à l'écran large : sur
+                mobile elle reste illisible même compressée, remplacée
+                ci-dessous par un agenda vertical qui réutilise renderJourCard. */}
+            <div className="hidden gap-3 overflow-x-auto pb-2 md:flex">
             {JOURS.map(({ key, label, offset }) => {
               const date = addDays(weekStart, offset);
               const dateISO = toISODate(date);
@@ -973,7 +979,16 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
                 </div>
               );
             })}
-          </div>
+            </div>
+
+            <div className="flex flex-col divide-y divide-border md:hidden">
+              {JOURS.map((jour) => (
+                <div key={jour.key} className="py-4 first:pt-0">
+                  {renderJourCard(jour)}
+                </div>
+              ))}
+            </div>
+          </>
         ))}
 
       {mode === "form" && (
