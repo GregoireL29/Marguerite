@@ -53,38 +53,38 @@ function buildDiagnostic(
 
   if (caDir === "up") {
     if (freqDir === "up" && panierDir === "down") {
-      body = `CA en hausse (${caStr}) mais porté uniquement par la fréquentation (${freqStr}) : le panier moyen recule (${panierStr}).`;
+      body = `CA en hausse (${caStr}) mais porté uniquement par le nombre de tickets (${freqStr}) : le panier moyen recule (${panierStr}).`;
     } else if (freqDir === "down" && panierDir === "up") {
-      body = `CA en hausse (${caStr}) malgré une fréquentation en baisse (${freqStr}), porté par un panier moyen plus élevé (${panierStr}).`;
+      body = `CA en hausse (${caStr}) malgré un nombre de tickets en baisse (${freqStr}), porté par un panier moyen plus élevé (${panierStr}).`;
     } else if (freqDir === "up" && panierDir === "up") {
-      body = `CA en hausse (${caStr}), porté à la fois par la fréquentation (${freqStr}) et par le panier moyen (${panierStr}).`;
+      body = `CA en hausse (${caStr}), porté à la fois par le nombre de tickets (${freqStr}) et par le panier moyen (${panierStr}).`;
     } else if (freqDir === "up" && panierDir === "stable") {
-      body = `CA en hausse (${caStr}), porté par la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
+      body = `CA en hausse (${caStr}), porté par le nombre de tickets (${freqStr}) ; le panier moyen reste stable.`;
     } else if (freqDir === "stable" && panierDir === "up") {
-      body = `CA en hausse (${caStr}), porté par le panier moyen (${panierStr}) ; la fréquentation reste stable.`;
+      body = `CA en hausse (${caStr}), porté par le panier moyen (${panierStr}) ; le nombre de tickets reste stable.`;
     } else {
       body = `CA en hausse (${caStr}).`;
     }
   } else if (caDir === "down") {
     if (freqDir === "down" && panierDir === "up") {
-      body = `CA en baisse (${caStr}) à cause d'un recul de la fréquentation (${freqStr}), partiellement compensé par un panier moyen plus élevé (${panierStr}).`;
+      body = `CA en baisse (${caStr}) à cause d'un recul du nombre de tickets (${freqStr}), partiellement compensé par un panier moyen plus élevé (${panierStr}).`;
     } else if (freqDir === "up" && panierDir === "down") {
-      body = `CA en baisse (${caStr}) malgré une fréquentation en hausse (${freqStr}) : le panier moyen recule fortement (${panierStr}).`;
+      body = `CA en baisse (${caStr}) malgré un nombre de tickets en hausse (${freqStr}) : le panier moyen recule fortement (${panierStr}).`;
     } else if (freqDir === "down" && panierDir === "down") {
-      body = `CA en baisse (${caStr}) : la fréquentation (${freqStr}) et le panier moyen (${panierStr}) reculent tous les deux.`;
+      body = `CA en baisse (${caStr}) : le nombre de tickets (${freqStr}) et le panier moyen (${panierStr}) reculent tous les deux.`;
     } else if (freqDir === "down" && panierDir === "stable") {
-      body = `CA en baisse (${caStr}), porté par le recul de la fréquentation (${freqStr}) ; le panier moyen reste stable.`;
+      body = `CA en baisse (${caStr}), porté par le recul du nombre de tickets (${freqStr}) ; le panier moyen reste stable.`;
     } else if (freqDir === "stable" && panierDir === "down") {
-      body = `CA en baisse (${caStr}), porté par le recul du panier moyen (${panierStr}) ; la fréquentation reste stable.`;
+      body = `CA en baisse (${caStr}), porté par le recul du panier moyen (${panierStr}) ; le nombre de tickets reste stable.`;
     } else {
       body = `CA en baisse (${caStr}).`;
     }
   } else if (freqDir === "up" && panierDir === "down") {
-    body = `CA stable (${caStr}) : la hausse de fréquentation (${freqStr}) compense un panier moyen en recul (${panierStr}).`;
+    body = `CA stable (${caStr}) : la hausse du nombre de tickets (${freqStr}) compense un panier moyen en recul (${panierStr}).`;
   } else if (freqDir === "down" && panierDir === "up") {
-    body = `CA stable (${caStr}) : la baisse de fréquentation (${freqStr}) est compensée par un panier moyen plus élevé (${panierStr}).`;
+    body = `CA stable (${caStr}) : la baisse du nombre de tickets (${freqStr}) est compensée par un panier moyen plus élevé (${panierStr}).`;
   } else {
-    body = `CA stable (${caStr}), fréquentation et panier moyen également stables.`;
+    body = `CA stable (${caStr}), nombre de tickets et panier moyen également stables.`;
   }
 
   return `Par rapport à ${referenceLabel} : ${body}`;
@@ -120,7 +120,7 @@ function buildDiagnosticObjectif(
         } de l'objectif (${formatEuros(panierCurrent)} sur ${formatEuros(
           objectif.panier_moyen_cible
         )})`
-      : "panier moyen non calculable (aucune fréquentation enregistrée)";
+      : "panier moyen non calculable (aucun ticket enregistré)";
 
   return `Par rapport à l'objectif personnalisé : ${caPart} ; ${panierPart}.`;
 }
@@ -141,6 +141,12 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const [freqCurrent, setFreqCurrent] = useState(0);
   const [caReference, setCaReference] = useState(0);
   const [freqReference, setFreqReference] = useState(0);
+  const [articlesCurrent, setArticlesCurrent] = useState(0);
+  const [visiteursCurrent, setVisiteursCurrent] = useState(0);
+  const [cartesCurrent, setCartesCurrent] = useState(0);
+  const [panierArticleActif, setPanierArticleActif] = useState(false);
+  const [tauxTransformationActif, setTauxTransformationActif] = useState(false);
+  const [tauxEncartementActif, setTauxEncartementActif] = useState(false);
   const [objectif, setObjectif] = useState<Objectif | null>(null);
   const [caCible, setCaCible] = useState("");
   const [panierCible, setPanierCible] = useState("");
@@ -160,10 +166,12 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         : getPrevAnchor(periode, anchor);
     const { start: refStart, end: refEnd } = getRange(periode, referenceAnchor);
 
-    const [currentRes, referenceRes, objectifRes] = await Promise.all([
+    const [currentRes, referenceRes, objectifRes, boutiqueRes] = await Promise.all([
       supabase
         .from("ventes_quotidiennes")
-        .select("chiffre_affaires, frequentation")
+        .select(
+          "chiffre_affaires, frequentation, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite"
+        )
         .eq("boutique_id", effectiveBoutiqueId)
         .gte("date", toISODate(start))
         .lte("date", toISODate(end)),
@@ -184,6 +192,13 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
             .eq("periode", periode)
             .eq("date_debut", toISODate(start))
             .maybeSingle(),
+      supabase
+        .from("boutiques")
+        .select(
+          "indicateur_panier_article_actif, indicateur_taux_transformation_actif, indicateur_taux_encartement_actif"
+        )
+        .eq("id", effectiveBoutiqueId)
+        .single(),
     ]);
 
     if (currentRes.error) {
@@ -201,6 +216,11 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
       setLoading(false);
       return;
     }
+    if (boutiqueRes.error) {
+      setError(boutiqueRes.error.message);
+      setLoading(false);
+      return;
+    }
 
     const current = currentRes.data ?? [];
     const reference = referenceRes.data ?? [];
@@ -209,6 +229,13 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     setFreqCurrent(current.reduce((s, v) => s + v.frequentation, 0));
     setCaReference(reference.reduce((s, v) => s + Number(v.chiffre_affaires), 0));
     setFreqReference(reference.reduce((s, v) => s + v.frequentation, 0));
+    setArticlesCurrent(current.reduce((s, v) => s + (v.nombre_articles ?? 0), 0));
+    setVisiteursCurrent(current.reduce((s, v) => s + (v.nombre_visiteurs ?? 0), 0));
+    setCartesCurrent(current.reduce((s, v) => s + (v.nombre_cartes_fidelite ?? 0), 0));
+
+    setPanierArticleActif(boutiqueRes.data.indicateur_panier_article_actif);
+    setTauxTransformationActif(boutiqueRes.data.indicateur_taux_transformation_actif);
+    setTauxEncartementActif(boutiqueRes.data.indicateur_taux_encartement_actif);
 
     const obj = objectifRes.data as Objectif | null;
     setObjectif(obj);
@@ -262,6 +289,10 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const { start, end } = getRange(periode, anchor);
   const panierCurrent = freqCurrent > 0 ? caCurrent / freqCurrent : null;
   const panierReference = freqReference > 0 ? caReference / freqReference : null;
+  const panierArticle = freqCurrent > 0 ? articlesCurrent / freqCurrent : null;
+  const tauxTransformation =
+    visiteursCurrent > 0 ? (freqCurrent / visiteursCurrent) * 100 : null;
+  const tauxEncartement = freqCurrent > 0 ? (cartesCurrent / freqCurrent) * 100 : null;
 
   const isObjectifMode = comparisonMode === "objectif";
   const referenceShortLabel =
@@ -420,10 +451,43 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
           </div>
 
           <p className="text-xs text-muted-foreground">
-            Fréquentation : {freqCurrent} client
-            {freqCurrent > 1 ? "s" : ""}
+            Nombre de tickets : {freqCurrent}
             {!isObjectifMode && ` (${formatPct(freqPct)} vs ${referenceShortLabel})`}
           </p>
+
+          {(panierArticleActif || tauxTransformationActif || tauxEncartementActif) && (
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+              {panierArticleActif && (
+                <div className="rounded-md border border-border p-4">
+                  <p className="text-xs text-muted-foreground">Panier article</p>
+                  <p className="text-2xl font-medium text-foreground">
+                    {panierArticle !== null ? panierArticle.toFixed(1) : "n/a"}
+                  </p>
+                  <p className="text-xs text-faint-foreground">articles / ticket</p>
+                </div>
+              )}
+              {tauxTransformationActif && (
+                <div className="rounded-md border border-border p-4">
+                  <p className="text-xs text-muted-foreground">Taux de transformation</p>
+                  <p className="text-2xl font-medium text-foreground">
+                    {tauxTransformation !== null
+                      ? `${tauxTransformation.toFixed(1)}%`
+                      : "n/a"}
+                  </p>
+                  <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
+                </div>
+              )}
+              {tauxEncartementActif && (
+                <div className="rounded-md border border-border p-4">
+                  <p className="text-xs text-muted-foreground">Taux d&apos;encartement</p>
+                  <p className="text-2xl font-medium text-foreground">
+                    {tauxEncartement !== null ? `${tauxEncartement.toFixed(1)}%` : "n/a"}
+                  </p>
+                  <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="rounded-md bg-card p-4">
             <p className="text-sm text-foreground">{diagnostic}</p>
