@@ -438,7 +438,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                 Objectif pour cette période
               </p>
               <div className="flex gap-3">
-                <div className="flex flex-1 flex-col gap-1">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <label htmlFor="ca_cible" className="text-sm text-muted-foreground">
                     CA cible (€)
                   </label>
@@ -453,7 +453,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                     className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
                   />
                 </div>
-                <div className="flex flex-1 flex-col gap-1">
+                <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <label
                     htmlFor="panier_cible"
                     className="text-sm text-muted-foreground"

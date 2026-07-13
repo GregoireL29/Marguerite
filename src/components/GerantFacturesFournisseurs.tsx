@@ -475,7 +475,7 @@ export function GerantFacturesFournisseurs() {
           </div>
 
           <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <label htmlFor="montant-ht" className="text-sm text-muted-foreground">
                 Montant HT (€)
               </label>
@@ -490,7 +490,7 @@ export function GerantFacturesFournisseurs() {
                 className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
               />
             </div>
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <label htmlFor="taux-tva" className="text-sm text-muted-foreground">
                 TVA (%)
               </label>
@@ -508,7 +508,7 @@ export function GerantFacturesFournisseurs() {
           </div>
 
           <div className="flex gap-3">
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <label htmlFor="categorie" className="text-sm text-muted-foreground">
                 Catégorie
               </label>
@@ -525,7 +525,7 @@ export function GerantFacturesFournisseurs() {
                 ))}
               </select>
             </div>
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <label htmlFor="date-facture" className="text-sm text-muted-foreground">
                 Date de la facture
               </label>

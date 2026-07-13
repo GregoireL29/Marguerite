@@ -714,8 +714,8 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <button
             onClick={() => setWeekStart((w) => addDays(w, -7))}
             className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
@@ -744,7 +744,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
             </span>
           )}
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <button
             onClick={handleGenerate}
             disabled={generating || loading || mode === "form"}
@@ -793,12 +793,12 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
           <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
+            <div className="flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
               {JOURS.map(({ key, label, offset }) => (
                 <button
                   key={key}
                   onClick={() => setSelectedDayOffset(offset)}
-                  className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     selectedDayOffset === offset
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
@@ -881,7 +881,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
 
                   <button
                     onClick={() => startCreate(offset)}
-                    className="self-start text-sm text-faint-foreground hover:text-foreground"
+                    className="-my-2.5 self-start px-1 py-2.5 text-sm text-faint-foreground hover:text-foreground"
                   >
                     + Ajouter
                   </button>
@@ -966,7 +966,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
 
                   <button
                     onClick={() => startCreate(offset)}
-                    className="text-[11px] text-faint-foreground hover:text-foreground"
+                    className="-my-2 px-1 py-2 text-[11px] text-faint-foreground hover:text-foreground"
                   >
                     + Ajouter
                   </button>

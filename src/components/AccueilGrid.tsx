@@ -156,7 +156,7 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
           <button
             onClick={dismissWelcomeTip}
             aria-label="Fermer"
-            className="shrink-0 text-sm text-muted-foreground hover:text-foreground"
+            className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center text-sm text-muted-foreground hover:text-foreground"
           >
             ✕
           </button>

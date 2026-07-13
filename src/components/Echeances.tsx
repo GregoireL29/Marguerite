@@ -206,7 +206,7 @@ export function ManagerEcheances() {
         </div>
 
         <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="date-echeance" className="text-sm text-muted-foreground">
               Date d&apos;échéance
             </label>
@@ -219,7 +219,7 @@ export function ManagerEcheances() {
               className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="responsable" className="text-sm text-muted-foreground">
               Responsable
             </label>
@@ -236,7 +236,7 @@ export function ManagerEcheances() {
         </div>
 
         <div className="flex gap-3">
-          <div className="flex flex-1 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
             <label htmlFor="delai-rappel" className="text-sm text-muted-foreground">
               Délai de rappel
             </label>
@@ -254,7 +254,7 @@ export function ManagerEcheances() {
             </select>
           </div>
           {delaiRappel === "personnalise" && (
-            <div className="flex flex-1 flex-col gap-1">
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
               <label htmlFor="delai-jours" className="text-sm text-muted-foreground">
                 Jours avant l&apos;échéance
               </label>
