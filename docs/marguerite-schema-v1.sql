@@ -104,6 +104,7 @@ create table taches (
   assigne_a uuid references utilisateurs(id) on delete set null,
   date date not null,
   statut statut_tache not null default 'a_faire',
+  commentaire text,
   created_at timestamptz not null default now()
 );
 

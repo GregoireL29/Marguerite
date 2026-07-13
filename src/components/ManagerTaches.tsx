@@ -21,6 +21,7 @@ interface Tache {
   assigne_a: string | null;
   statut: Statut;
   boutique_id: string;
+  commentaire: string | null;
 }
 
 interface Salarie {
@@ -47,6 +48,7 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
   const [titre, setTitre] = useState("");
   const [categorie, setCategorie] = useState<Categorie>("ouverture");
   const [assigneA, setAssigneA] = useState("");
+  const [commentaire, setCommentaire] = useState("");
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -59,13 +61,13 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
     const [staleRes, todayRes, salariesRes] = await Promise.all([
       supabase
         .from("taches")
-        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id, commentaire")
         .eq("boutique_id", effectiveBoutiqueId)
         .eq("statut", "a_faire")
         .lt("date", todayISO),
       supabase
         .from("taches")
-        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id, commentaire")
         .eq("boutique_id", effectiveBoutiqueId)
         .eq("date", todayISO)
         .order("created_at"),
@@ -146,6 +148,7 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
       categorie,
       assigne_a: assigneA || null,
       date: toISODate(new Date()),
+      commentaire: commentaire.trim() || null,
     });
 
     setSaving(false);
@@ -158,6 +161,7 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
     setTitre("");
     setCategorie("ouverture");
     setAssigneA("");
+    setCommentaire("");
     setShowForm(false);
     await load();
   }
@@ -263,6 +267,17 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
               </select>
             </div>
           </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="commentaire" className="text-sm text-muted-foreground">
+              Commentaire (optionnel)
+            </label>
+            <input
+              id="commentaire"
+              value={commentaire}
+              onChange={(e) => setCommentaire(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
           <button
             type="submit"
             disabled={saving}
@@ -287,22 +302,30 @@ export function ManagerTaches({ boutiqueId }: { boutiqueId?: string }) {
                 {items.map((t) => (
                   <li
                     key={t.id}
-                    className="flex items-center justify-between py-2"
+                    className="flex items-start justify-between gap-3 py-2"
                   >
-                    <label className="flex items-center gap-2 text-sm">
+                    <label className="flex items-start gap-2 text-sm">
                       <input
                         type="checkbox"
                         checked={t.statut === "faite"}
                         onChange={() => toggleStatut(t)}
+                        className="mt-0.5"
                       />
-                      <span
-                        className={
-                          t.statut === "faite"
-                            ? "text-faint-foreground line-through"
-                            : "text-foreground"
-                        }
-                      >
-                        {t.titre}
+                      <span className="flex flex-col">
+                        <span
+                          className={
+                            t.statut === "faite"
+                              ? "text-faint-foreground line-through"
+                              : "text-foreground"
+                          }
+                        >
+                          {t.titre}
+                        </span>
+                        {t.commentaire && (
+                          <span className="text-xs text-muted-foreground">
+                            {t.commentaire}
+                          </span>
+                        )}
                       </span>
                     </label>
                     <div className="flex shrink-0 items-center gap-3">
