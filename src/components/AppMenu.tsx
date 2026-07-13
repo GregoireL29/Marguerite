@@ -24,6 +24,7 @@ import {
   IconClock,
   IconGauge,
   IconPeople,
+  IconMoon,
   IconChevronDown,
 } from "@/components/icons/MenuIcons";
 
@@ -57,6 +58,12 @@ const CATEGORIES: CategoryItem[] = [
       { label: "Congés", href: "/conges", icon: IconSun },
       { label: "Messagerie", href: "/messagerie", icon: IconSpeechBubble },
       { label: "Annonces", href: "/annonces", icon: IconMegaphone },
+      {
+        label: "Fin de journée",
+        href: "/fin-de-journee",
+        icon: IconMoon,
+        hiddenForRoles: ["gerant"],
+      },
     ],
   },
   {
