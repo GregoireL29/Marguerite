@@ -97,6 +97,7 @@ export function AppMenu() {
   const [session, setSession] = useState<Session | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [openCategory, setOpenCategory] = useState<string | null>(null);
+  const [alignPanelRight, setAlignPanelRight] = useState(false);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -173,7 +174,17 @@ export function AppMenu() {
             <div key={cat.key} className="relative shrink-0">
               <button
                 type="button"
-                onClick={() => setOpenCategory(isOpen ? null : cat.key)}
+                onClick={(e) => {
+                  if (!isOpen) {
+                    // Le panneau (largeur fixe w-56, ancré à gauche du
+                    // déclencheur) peut déborder à droite du viewport selon
+                    // la position du bouton dans la barre en flex-wrap : on
+                    // bascule l'ancrage à droite quand ça ne rentre pas.
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setAlignPanelRight(rect.left + 224 > window.innerWidth - 16);
+                  }
+                  setOpenCategory(isOpen ? null : cat.key);
+                }}
                 className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium ${
                   isActiveRoute
                     ? "bg-accent text-accent-foreground"
@@ -192,7 +203,11 @@ export function AppMenu() {
               </button>
 
               {isOpen && (
-                <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1 shadow-sm">
+                <div
+                  className={`absolute top-full z-20 mt-1 w-56 rounded-md border border-border bg-card p-1 shadow-sm ${
+                    alignPanelRight ? "right-0" : "left-0"
+                  }`}
+                >
                   {cat.tabs.map((tab) => {
                     const isActiveTab = pathname === tab.href;
                     return (
