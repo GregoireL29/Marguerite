@@ -42,7 +42,7 @@ function joursInclusifs(debut: string, fin: string): number {
   return Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
 }
 
-export function SalarieConges() {
+export function SalarieConges({ embedded = false }: { embedded?: boolean } = {}) {
   const profile = useUserProfile();
   const [demandes, setDemandes] = useState<DemandeRow[]>([]);
   const [soldeConges, setSoldeConges] = useState<number | null>(null);
@@ -141,10 +141,8 @@ export function SalarieConges() {
 
   if (!profile) return null;
 
-  return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-foreground">Congés</h1>
-
+  const content = (
+    <>
       {soldeConges !== null && (
         <p className="text-sm text-muted-foreground">
           Solde restant :{" "}
@@ -234,6 +232,17 @@ export function SalarieConges() {
           </ul>
         )}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="flex flex-col gap-6">{content}</div>;
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <h1 className="text-xl font-medium text-foreground">Congés</h1>
+      {content}
     </main>
   );
 }

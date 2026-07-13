@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { SalarieConges } from "@/components/SalarieConges";
 
 interface DemandeRow {
   id: string;
@@ -26,6 +27,8 @@ function formatDate(d: string): string {
 
 export function ManagerConges() {
   const profile = useUserProfile();
+  const isManager = profile?.role === "manager";
+  const [vue, setVue] = useState<"equipe" | "perso">("equipe");
   const [demandes, setDemandes] = useState<DemandeRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [decidingId, setDecidingId] = useState<string | null>(null);
@@ -36,13 +39,24 @@ export function ManagerConges() {
     setLoading(true);
     setError(null);
 
-    const { data, error: fetchError } = await supabase
+    // Un manager ne doit jamais pouvoir valider sa propre demande dans sa
+    // propre file : on l'exclut de la requête, elle reste alors visible
+    // pour le gérant (qui voit déjà cette boutique via le sélecteur), qui
+    // tranche à sa place — cf. cahier des charges ("gérant : arbitrage si
+    // besoin").
+    let query = supabase
       .from("demandes_conges")
       .select(
         "id, utilisateur_id, date_debut, date_fin, message, statut, utilisateurs(nom, boutiques(nom))"
       )
       .eq("statut", "en_attente")
       .order("created_at", { ascending: true });
+
+    if (isManager) {
+      query = query.neq("utilisateur_id", profile.id);
+    }
+
+    const { data, error: fetchError } = await query;
 
     if (fetchError) {
       setError(fetchError.message);
@@ -96,7 +110,7 @@ export function ManagerConges() {
 
     setDemandes(withConflicts);
     setLoading(false);
-  }, [profile]);
+  }, [profile, isManager]);
 
   useEffect(() => {
     load();
@@ -127,9 +141,36 @@ export function ManagerConges() {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-xl font-medium text-foreground">Congés</h1>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {isManager && (
+        <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
+          <button
+            onClick={() => setVue("equipe")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              vue === "equipe"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Équipe
+          </button>
+          <button
+            onClick={() => setVue("perso")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              vue === "perso"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Mes congés
+          </button>
+        </div>
+      )}
 
-      {loading ? (
+      {vue === "perso" ? (
+        <SalarieConges embedded />
+      ) : error ? (
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      ) : loading ? (
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : demandes.length === 0 ? (
         <p className="text-sm text-faint-foreground">

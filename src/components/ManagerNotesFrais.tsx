@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { SalarieNotesFrais } from "@/components/SalarieNotesFrais";
 
 interface NoteRow {
   id: string;
@@ -69,6 +70,8 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
   // repasser derrière la décision de légitimité déjà tranchée par le
   // manager (cf. docs/cahier-des-charges.md).
   const isGerant = profile?.role === "gerant";
+  const isManager = profile?.role === "manager";
+  const [vue, setVue] = useState<"equipe" | "perso">("equipe");
   const [enAttente, setEnAttente] = useState<NoteRow[]>([]);
   const [aRembourser, setARembourser] = useState<NoteRow[]>([]);
   const [previews, setPreviews] = useState<Record<string, string>>({});
@@ -160,12 +163,39 @@ export function ManagerNotesFrais({ boutiqueId }: { boutiqueId?: string }) {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="text-xl font-medium text-foreground">
-        Notes de frais {isGerant ? "— à rembourser" : "— en attente"}
+        Notes de frais {isGerant ? "— à rembourser" : vue === "equipe" ? "— en attente" : ""}
       </h1>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+      {isManager && (
+        <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
+          <button
+            onClick={() => setVue("equipe")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              vue === "equipe"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Équipe
+          </button>
+          <button
+            onClick={() => setVue("perso")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              vue === "perso"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Mes notes de frais
+          </button>
+        </div>
+      )}
 
-      {loading ? (
+      {vue === "perso" ? (
+        <SalarieNotesFrais embedded />
+      ) : error ? (
+        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+      ) : loading ? (
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : !isGerant ? (
         enAttente.length === 0 ? (

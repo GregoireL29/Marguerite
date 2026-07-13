@@ -40,7 +40,7 @@ function formatDate(iso: string): string {
   });
 }
 
-export function SalarieNotesFrais() {
+export function SalarieNotesFrais({ embedded = false }: { embedded?: boolean } = {}) {
   const profile = useUserProfile();
   const [notes, setNotes] = useState<NoteFrais[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,6 +97,12 @@ export function SalarieNotesFrais() {
       return;
     }
 
+    // Un manager qui dépose une note pour lui-même n'a personne pour la
+    // valider en première ligne (c'est justement son propre rôle pour son
+    // équipe) : elle saute donc directement l'étape "en attente" et atterrit
+    // dans la file "à rembourser" du gérant, sans repasser par lui-même.
+    const statut = profile.role === "salarie" ? undefined : "validee";
+
     const { error: insertError } = await supabase.from("notes_frais").insert({
       utilisateur_id: profile.id,
       boutique_id: profile.boutique_id,
@@ -104,6 +110,7 @@ export function SalarieNotesFrais() {
       categorie,
       descriptif,
       ticket_url: path,
+      ...(statut ? { statut } : {}),
     });
 
     if (insertError) {
@@ -123,10 +130,8 @@ export function SalarieNotesFrais() {
 
   if (!profile) return null;
 
-  return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <h1 className="text-xl font-medium text-foreground">Notes de frais</h1>
-
+  const content = (
+    <>
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <form
@@ -236,6 +241,17 @@ export function SalarieNotesFrais() {
           </ul>
         )}
       </div>
+    </>
+  );
+
+  if (embedded) {
+    return <div className="flex flex-col gap-6">{content}</div>;
+  }
+
+  return (
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+      <h1 className="text-xl font-medium text-foreground">Notes de frais</h1>
+      {content}
     </main>
   );
 }
