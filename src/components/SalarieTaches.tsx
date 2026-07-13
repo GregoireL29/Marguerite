@@ -12,6 +12,7 @@ interface Tache {
   assigne_a: string | null;
   statut: "a_faire" | "faite" | "reportee";
   boutique_id: string;
+  commentaire: string | null;
 }
 
 function toISODate(d: Date): string {
@@ -38,13 +39,13 @@ export function SalarieTaches() {
     const [staleRes, todayRes] = await Promise.all([
       supabase
         .from("taches")
-        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id, commentaire")
         .eq("assigne_a", profile.id)
         .eq("statut", "a_faire")
         .lt("date", todayISO),
       supabase
         .from("taches")
-        .select("id, titre, categorie, assigne_a, statut, boutique_id")
+        .select("id, titre, categorie, assigne_a, statut, boutique_id, commentaire")
         .eq("assigne_a", profile.id)
         .eq("date", todayISO)
         .order("created_at"),
@@ -112,20 +113,28 @@ export function SalarieTaches() {
       ) : (
         <ul className="flex flex-col divide-y divide-border">
           {taches.map((t) => (
-            <li key={t.id} className="flex items-center gap-3 py-3">
+            <li key={t.id} className="flex items-start gap-3 py-3">
               <input
                 type="checkbox"
                 checked={t.statut === "faite"}
                 onChange={() => toggle(t)}
+                className="mt-0.5"
               />
-              <span
-                className={`text-sm ${
-                  t.statut === "faite"
-                    ? "text-faint-foreground line-through"
-                    : "text-foreground"
-                }`}
-              >
-                {t.titre}
+              <span className="flex flex-col">
+                <span
+                  className={`text-sm ${
+                    t.statut === "faite"
+                      ? "text-faint-foreground line-through"
+                      : "text-foreground"
+                  }`}
+                >
+                  {t.titre}
+                </span>
+                {t.commentaire && (
+                  <span className="text-xs text-muted-foreground">
+                    {t.commentaire}
+                  </span>
+                )}
               </span>
             </li>
           ))}
