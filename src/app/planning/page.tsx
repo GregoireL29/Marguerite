@@ -786,14 +786,14 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
 
   if (!effectiveBoutiqueId) {
     return (
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
         <p className="text-sm text-faint-foreground">Aucune boutique associée à votre compte.</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -1116,7 +1116,7 @@ export default function Home() {
 
   if (profile.role === "gerant") {
     return (
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pt-8">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 pt-8">
         <BoutiqueSelector value={selectedBoutiqueId} onChange={setSelectedBoutiqueId} />
         {selectedBoutiqueId && <ManagerPlanning boutiqueId={selectedBoutiqueId} />}
       </div>
