@@ -211,7 +211,7 @@ export function GerantIndicateurs() {
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <p>
-                  {s.frequentation} client{s.frequentation > 1 ? "s" : ""}
+                  {s.frequentation} ticket{s.frequentation > 1 ? "s" : ""}
                   {s.panierMoyen !== null && ` · panier moyen ${formatEuros(s.panierMoyen)}`}
                 </p>
                 <p>{s.ecartVsMoyenne !== null ? `${formatPct(s.ecartVsMoyenne)} vs moyenne` : ""}</p>

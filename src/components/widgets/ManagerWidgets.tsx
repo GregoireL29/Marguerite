@@ -75,7 +75,7 @@ export function WidgetCaDuJour() {
         <div>
           <p className="text-2xl font-medium text-foreground">{formatEuros(data.ca)}</p>
           <p className="text-xs text-muted-foreground">
-            {data.freq} client{data.freq > 1 ? "s" : ""}
+            {data.freq} ticket{data.freq > 1 ? "s" : ""}
             {data.caHier > 0 &&
               ` · hier : ${formatEuros(data.caHier)}`}
           </p>

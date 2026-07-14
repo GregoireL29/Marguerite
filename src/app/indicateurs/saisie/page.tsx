@@ -13,6 +13,12 @@ function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
   const [date, setDate] = useState(() => toISODate(new Date()));
   const [chiffreAffaires, setChiffreAffaires] = useState("");
   const [frequentation, setFrequentation] = useState("");
+  const [nombreArticles, setNombreArticles] = useState("");
+  const [nombreVisiteurs, setNombreVisiteurs] = useState("");
+  const [nombreCartesFidelite, setNombreCartesFidelite] = useState("");
+  const [panierArticleActif, setPanierArticleActif] = useState(false);
+  const [tauxTransformationActif, setTauxTransformationActif] = useState(false);
+  const [tauxEncartementActif, setTauxEncartementActif] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -25,23 +31,51 @@ function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
       setError(null);
       setSaved(false);
 
-      const { data, error: fetchError } = await supabase
-        .from("ventes_quotidiennes")
-        .select("chiffre_affaires, frequentation")
-        .eq("boutique_id", effectiveBoutiqueId)
-        .eq("date", d)
-        .maybeSingle();
+      const [boutiqueRes, venteRes] = await Promise.all([
+        supabase
+          .from("boutiques")
+          .select(
+            "indicateur_panier_article_actif, indicateur_taux_transformation_actif, indicateur_taux_encartement_actif"
+          )
+          .eq("id", effectiveBoutiqueId)
+          .single(),
+        supabase
+          .from("ventes_quotidiennes")
+          .select(
+            "chiffre_affaires, frequentation, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite"
+          )
+          .eq("boutique_id", effectiveBoutiqueId)
+          .eq("date", d)
+          .maybeSingle(),
+      ]);
 
-      if (fetchError) {
-        setError(fetchError.message);
+      if (boutiqueRes.error) {
+        setError(boutiqueRes.error.message);
+        setLoading(false);
+        return;
+      }
+      if (venteRes.error) {
+        setError(venteRes.error.message);
         setLoading(false);
         return;
       }
 
-      setChiffreAffaires(
-        data ? String(data.chiffre_affaires) : ""
+      setPanierArticleActif(boutiqueRes.data.indicateur_panier_article_actif);
+      setTauxTransformationActif(
+        boutiqueRes.data.indicateur_taux_transformation_actif
       );
+      setTauxEncartementActif(boutiqueRes.data.indicateur_taux_encartement_actif);
+
+      const data = venteRes.data;
+      setChiffreAffaires(data ? String(data.chiffre_affaires) : "");
       setFrequentation(data ? String(data.frequentation) : "");
+      setNombreArticles(data?.nombre_articles != null ? String(data.nombre_articles) : "");
+      setNombreVisiteurs(
+        data?.nombre_visiteurs != null ? String(data.nombre_visiteurs) : ""
+      );
+      setNombreCartesFidelite(
+        data?.nombre_cartes_fidelite != null ? String(data.nombre_cartes_fidelite) : ""
+      );
       setLoading(false);
     },
     [profile, effectiveBoutiqueId]
@@ -66,6 +100,11 @@ function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
           date,
           chiffre_affaires: Number(chiffreAffaires),
           frequentation: Number(frequentation),
+          nombre_articles: panierArticleActif ? Number(nombreArticles) : null,
+          nombre_visiteurs: tauxTransformationActif ? Number(nombreVisiteurs) : null,
+          nombre_cartes_fidelite: tauxEncartementActif
+            ? Number(nombreCartesFidelite)
+            : null,
         },
         { onConflict: "boutique_id,date" }
       );
@@ -136,7 +175,7 @@ function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="frequentation" className="text-sm text-muted-foreground">
-            Fréquentation (nombre de clients)
+            Nombre de tickets
           </label>
           <input
             id="frequentation"
@@ -150,6 +189,72 @@ function SaisieVentes({ boutiqueId }: { boutiqueId?: string }) {
             className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
           />
         </div>
+
+        {panierArticleActif && (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="nombre_articles"
+              className="text-sm text-muted-foreground"
+            >
+              Nombre d&apos;articles vendus
+            </label>
+            <input
+              id="nombre_articles"
+              type="number"
+              step="1"
+              min="0"
+              required
+              disabled={loading}
+              value={nombreArticles}
+              onChange={(e) => setNombreArticles(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+            />
+          </div>
+        )}
+
+        {tauxTransformationActif && (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="nombre_visiteurs"
+              className="text-sm text-muted-foreground"
+            >
+              Nombre de visiteurs
+            </label>
+            <input
+              id="nombre_visiteurs"
+              type="number"
+              step="1"
+              min="0"
+              required
+              disabled={loading}
+              value={nombreVisiteurs}
+              onChange={(e) => setNombreVisiteurs(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+            />
+          </div>
+        )}
+
+        {tauxEncartementActif && (
+          <div className="flex flex-col gap-1">
+            <label
+              htmlFor="nombre_cartes_fidelite"
+              className="text-sm text-muted-foreground"
+            >
+              Nombre de cartes de fidélité créées
+            </label>
+            <input
+              id="nombre_cartes_fidelite"
+              type="number"
+              step="1"
+              min="0"
+              required
+              disabled={loading}
+              value={nombreCartesFidelite}
+              onChange={(e) => setNombreCartesFidelite(e.target.value)}
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent disabled:opacity-50"
+            />
+          </div>
+        )}
 
         <button
           type="submit"

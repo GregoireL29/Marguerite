@@ -23,6 +23,14 @@ create table boutiques (
   effectif_min_ouverture integer not null default 1,
   effectif_min_fermeture integer not null default 1,
   effectif_min_journee integer not null default 1,
+  -- Indicateurs optionnels (onglet Indicateurs) : chaque boutique active
+  -- ou non les champs de saisie quotidienne correspondants. "Nombre de
+  -- tickets" (ventes_quotidiennes.frequentation) reste toujours actif,
+  -- il n'a pas de bascule ici : c'est déjà un champ du bilan diagnostic
+  -- de base, pas un indicateur optionnel.
+  indicateur_panier_article_actif boolean not null default false,
+  indicateur_taux_transformation_actif boolean not null default false,
+  indicateur_taux_encartement_actif boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -116,7 +124,17 @@ create table ventes_quotidiennes (
   boutique_id uuid not null references boutiques(id) on delete cascade,
   date date not null,
   chiffre_affaires numeric(10,2) not null,
+  -- Nombre de tickets (transactions) du jour. Nommé "frequentation"
+  -- historiquement mais c'est déjà ce qu'il mesure (dénominateur du
+  -- panier moyen = CA / frequentation) — pas une vraie fréquentation
+  -- (visiteurs), voir nombre_visiteurs plus bas pour cette dernière.
   frequentation integer not null,
+  -- Champs optionnels des indicateurs additionnels (onglet Indicateurs
+  -- > Ma boutique), renseignés seulement si l'indicateur correspondant
+  -- est actif pour la boutique.
+  nombre_articles integer,
+  nombre_visiteurs integer,
+  nombre_cartes_fidelite integer,
   created_at timestamptz not null default now(),
   unique (boutique_id, date)
 );
