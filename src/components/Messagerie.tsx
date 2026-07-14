@@ -141,8 +141,13 @@ export function Messagerie() {
   const loadCollegues = useCallback(async () => {
     if (!profile) return;
 
-    // Le gérant voit tous les collègues de sa structure (toutes boutiques) ;
-    // manager et salarié restent scopés à leur propre boutique.
+    // Le gérant voit tous les collègues de sa structure (toutes boutiques).
+    // Manager et salarié restent scopés à leur propre boutique, mais voient
+    // aussi les gérants (boutique_id null) : sans eux, impossible de
+    // démarrer une conversation vers le haut de la hiérarchie, seul un
+    // gérant pouvait jusqu'ici initier l'échange. La RLS sur utilisateurs
+    // autorise déjà cette lecture (gérants visibles par toute la
+    // structure), ce n'était qu'un filtre applicatif trop restrictif.
     let query = supabase
       .from("utilisateurs")
       .select("id, nom, boutique_id")
@@ -152,7 +157,7 @@ export function Messagerie() {
     query =
       profile.role === "gerant"
         ? query.eq("structure_id", profile.structure_id)
-        : query.eq("boutique_id", profile.boutique_id);
+        : query.or(`boutique_id.eq.${profile.boutique_id},role.eq.gerant`);
 
     const { data, error: collegueError } = await query;
 
