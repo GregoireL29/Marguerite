@@ -52,6 +52,7 @@ export function SalarieNotesFrais({ embedded = false }: { embedded?: boolean } =
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -124,6 +125,7 @@ export function SalarieNotesFrais({ embedded = false }: { embedded?: boolean } =
     setDescriptif("");
     setFile(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+    if (cameraInputRef.current) cameraInputRef.current.value = "";
     setSaving(false);
     await load();
   }
@@ -199,9 +201,23 @@ export function SalarieNotesFrais({ embedded = false }: { embedded?: boolean } =
             ref={fileInputRef}
             type="file"
             accept="image/*,.pdf"
-            required
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
             className="text-sm text-muted-foreground"
+          />
+          <label
+            htmlFor="ticket-camera"
+            className="mt-1 w-fit cursor-pointer rounded-md border border-border px-3 py-1.5 text-sm text-foreground hover:bg-border/40"
+          >
+            Prendre en photo
+          </label>
+          <input
+            id="ticket-camera"
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            className="hidden"
           />
         </div>
 
