@@ -13,8 +13,21 @@ export function FinDeJourneeContent() {
   const isSalarie = profile?.role === "salarie";
 
   const [taches, setTaches] = useState<TacheStale[] | null>(null);
-  // undefined = chargement, null = pas encore saisi, number = déjà saisi.
-  const [caSaisi, setCaSaisi] = useState<number | null | undefined>(undefined);
+
+  interface VentesDuJour {
+    chiffre_affaires: number | null;
+    nombre_articles: number | null;
+    nombre_visiteurs: number | null;
+    nombre_cartes_fidelite: number | null;
+  }
+
+  // undefined = chargement, null = aucune saisie pour aujourd'hui.
+  const [ventes, setVentes] = useState<VentesDuJour | null | undefined>(undefined);
+  const [indicateursActifs, setIndicateursActifs] = useState<{
+    panierArticle: boolean;
+    tauxTransformation: boolean;
+    tauxEncartement: boolean;
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const loadTaches = useCallback(async () => {
@@ -45,28 +58,56 @@ export function FinDeJourneeContent() {
     setTaches((data ?? []) as TacheStale[]);
   }, [profile, isManager]);
 
-  const loadCa = useCallback(async () => {
+  const loadVentes = useCallback(async () => {
     if (!profile?.boutique_id) return;
     const today = toISODate(new Date());
 
-    const { data, error: fetchError } = await supabase
-      .from("ventes_quotidiennes")
-      .select("chiffre_affaires")
-      .eq("boutique_id", profile.boutique_id)
-      .eq("date", today)
-      .maybeSingle();
+    const [boutiqueRes, ventesRes] = await Promise.all([
+      supabase
+        .from("boutiques")
+        .select(
+          "indicateur_panier_article_actif, indicateur_taux_transformation_actif, indicateur_taux_encartement_actif"
+        )
+        .eq("id", profile.boutique_id)
+        .single(),
+      supabase
+        .from("ventes_quotidiennes")
+        .select("chiffre_affaires, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite")
+        .eq("boutique_id", profile.boutique_id)
+        .eq("date", today)
+        .maybeSingle(),
+    ]);
 
-    if (fetchError) {
-      setError(fetchError.message);
+    if (boutiqueRes.error) {
+      setError(boutiqueRes.error.message);
       return;
     }
-    setCaSaisi(data ? Number(data.chiffre_affaires) : null);
+    if (ventesRes.error) {
+      setError(ventesRes.error.message);
+      return;
+    }
+
+    setIndicateursActifs({
+      panierArticle: boutiqueRes.data.indicateur_panier_article_actif,
+      tauxTransformation: boutiqueRes.data.indicateur_taux_transformation_actif,
+      tauxEncartement: boutiqueRes.data.indicateur_taux_encartement_actif,
+    });
+    setVentes(
+      ventesRes.data
+        ? {
+            chiffre_affaires: Number(ventesRes.data.chiffre_affaires),
+            nombre_articles: ventesRes.data.nombre_articles,
+            nombre_visiteurs: ventesRes.data.nombre_visiteurs,
+            nombre_cartes_fidelite: ventesRes.data.nombre_cartes_fidelite,
+          }
+        : null
+    );
   }, [profile]);
 
   useEffect(() => {
     loadTaches();
-    if (isManager) loadCa();
-  }, [loadTaches, loadCa, isManager]);
+    if (isManager) loadVentes();
+  }, [loadTaches, loadVentes, isManager]);
 
   if (!profile) return null;
 
@@ -114,24 +155,64 @@ export function FinDeJourneeContent() {
       {isManager && (
         <div className="flex flex-col gap-2">
           <h2 className="text-sm font-medium text-foreground">
-            Chiffre d&apos;affaires du jour
+            Chiffre d&apos;affaires et indicateurs du jour
           </h2>
-          {caSaisi === undefined ? (
+          {ventes === undefined || indicateursActifs === null ? (
             <p className="text-sm text-muted-foreground">Chargement...</p>
-          ) : caSaisi === null ? (
-            <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
-              <p className="text-sm text-foreground">Pas encore saisi.</p>
-              <Link
-                href="/indicateurs/saisie"
-                className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
-              >
-                Saisir
-              </Link>
-            </div>
           ) : (
-            <p className="text-sm text-green-600 dark:text-green-400">
-              Déjà saisi : {caSaisi.toLocaleString("fr-FR")} €
-            </p>
+            (() => {
+              const manquants: string[] = [];
+              if (ventes === null || ventes.chiffre_affaires === null) {
+                manquants.push("Chiffre d'affaires");
+              }
+              if (
+                indicateursActifs.panierArticle &&
+                (ventes === null || ventes.nombre_articles === null)
+              ) {
+                manquants.push("Nombre d'articles vendus");
+              }
+              if (
+                indicateursActifs.tauxTransformation &&
+                (ventes === null || ventes.nombre_visiteurs === null)
+              ) {
+                manquants.push("Nombre de visiteurs");
+              }
+              if (
+                indicateursActifs.tauxEncartement &&
+                (ventes === null || ventes.nombre_cartes_fidelite === null)
+              ) {
+                manquants.push("Nombre de cartes de fidélité créées");
+              }
+
+              if (manquants.length > 0) {
+                return (
+                  <div className="flex items-center justify-between gap-3 rounded-md border border-border p-3">
+                    <p className="text-sm text-foreground">
+                      Pas encore saisi : {manquants.join(", ")}.
+                    </p>
+                    <Link
+                      href="/indicateurs/saisie"
+                      className="rounded-md bg-accent px-3 py-1.5 text-sm font-medium text-accent-foreground"
+                    >
+                      Saisir
+                    </Link>
+                  </div>
+                );
+              }
+
+              return (
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Tout est saisi pour aujourd&apos;hui : CA{" "}
+                  {ventes!.chiffre_affaires!.toLocaleString("fr-FR")} €
+                  {indicateursActifs.panierArticle &&
+                    ` · ${ventes!.nombre_articles} articles`}
+                  {indicateursActifs.tauxTransformation &&
+                    ` · ${ventes!.nombre_visiteurs} visiteurs`}
+                  {indicateursActifs.tauxEncartement &&
+                    ` · ${ventes!.nombre_cartes_fidelite} cartes fidélité`}
+                </p>
+              );
+            })()
           )}
         </div>
       )}
