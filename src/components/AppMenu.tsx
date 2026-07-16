@@ -14,6 +14,7 @@ import {
   IconChecklist,
   IconSun,
   IconSpeechBubble,
+  IconDialogue,
   IconMegaphone,
   IconBarChart,
   IconReceipt,
@@ -88,6 +89,7 @@ const CATEGORIES: CategoryItem[] = [
     tabs: [
       { label: "Documents", href: "/documents", icon: IconFolder },
       { label: "Onboarding", href: "/onboarding", icon: IconBook },
+      { label: "Entretiens", href: "/entretiens", icon: IconDialogue },
       {
         label: "Rappels et échéances",
         href: "/echeances",

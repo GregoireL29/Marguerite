@@ -63,6 +63,15 @@ export function IconSpeechBubble({ className }: IconProps) {
   );
 }
 
+export function IconDialogue({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M3.5 4.5h10v7H7l-2 2v-2H3.5z" />
+      <path d="M20.5 9.5h-10v7h6l2 2v-2h2z" />
+    </svg>
+  );
+}
+
 export function IconMegaphone({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
