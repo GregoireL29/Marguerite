@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import { ManagerIndicateurs } from "@/components/ManagerIndicateurs";
 import { BoutiqueSelector } from "@/components/BoutiqueSelector";
+import { VariationPct } from "@/components/VariationPct";
 import {
   type Periode,
   PERIODES,
@@ -13,7 +14,6 @@ import {
   navigateAnchor,
   formatRangeLabel,
   formatEuros,
-  formatPct,
   pct,
   toISODate,
 } from "@/lib/indicateurs";
@@ -207,14 +207,16 @@ export function GerantIndicateurs() {
                 >
                   {i + 1}. {s.nom}
                 </button>
-                <p className="text-sm font-medium text-foreground">{formatEuros(s.ca)}</p>
+                <p className="text-base font-medium text-foreground">{formatEuros(s.ca)}</p>
               </div>
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <p>
                   {s.frequentation} ticket{s.frequentation > 1 ? "s" : ""}
                   {s.panierMoyen !== null && ` · panier moyen ${formatEuros(s.panierMoyen)}`}
                 </p>
-                <p>{s.ecartVsMoyenne !== null ? `${formatPct(s.ecartVsMoyenne)} vs moyenne` : ""}</p>
+                {s.ecartVsMoyenne !== null && (
+                  <VariationPct value={s.ecartVsMoyenne} suffix="vs moyenne" />
+                )}
               </div>
             </li>
           ))}

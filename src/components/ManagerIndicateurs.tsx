@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { VariationPct } from "@/components/VariationPct";
 import {
   type Periode,
   PERIODES,
@@ -131,6 +132,28 @@ interface Objectif {
   panier_moyen_cible: number;
 }
 
+// Met en couleur les pourcentages signés du bilan (générés par formatPct)
+// pour que hausses et baisses ressortent au même code visuel que les cartes
+// chiffrées, sans toucher à la construction du texte lui-même.
+function renderDiagnostic(text: string): React.ReactNode[] {
+  return text.split(/([+-]\d+(?:\.\d+)?%)/g).map((part, i) => {
+    const match = /^([+-]\d+(?:\.\d+)?)%$/.exec(part);
+    if (!match) return part;
+    const value = Number(match[1]);
+    const cls =
+      value > 0
+        ? "font-medium text-green-600 dark:text-green-400"
+        : value < 0
+          ? "font-medium text-red-600 dark:text-red-400"
+          : "text-muted-foreground";
+    return (
+      <span key={i} className={cls}>
+        {part}
+      </span>
+    );
+  });
+}
+
 export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const profile = useUserProfile();
   const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
@@ -144,6 +167,9 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const [articlesCurrent, setArticlesCurrent] = useState(0);
   const [visiteursCurrent, setVisiteursCurrent] = useState(0);
   const [cartesCurrent, setCartesCurrent] = useState(0);
+  const [articlesReference, setArticlesReference] = useState(0);
+  const [visiteursReference, setVisiteursReference] = useState(0);
+  const [cartesReference, setCartesReference] = useState(0);
   const [panierArticleActif, setPanierArticleActif] = useState(false);
   const [tauxTransformationActif, setTauxTransformationActif] = useState(false);
   const [tauxEncartementActif, setTauxEncartementActif] = useState(false);
@@ -179,7 +205,9 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         ? Promise.resolve({ data: null, error: null })
         : supabase
             .from("ventes_quotidiennes")
-            .select("chiffre_affaires, frequentation")
+            .select(
+              "chiffre_affaires, frequentation, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite"
+            )
             .eq("boutique_id", effectiveBoutiqueId)
             .gte("date", toISODate(refStart))
             .lte("date", toISODate(refEnd)),
@@ -232,6 +260,11 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     setArticlesCurrent(current.reduce((s, v) => s + (v.nombre_articles ?? 0), 0));
     setVisiteursCurrent(current.reduce((s, v) => s + (v.nombre_visiteurs ?? 0), 0));
     setCartesCurrent(current.reduce((s, v) => s + (v.nombre_cartes_fidelite ?? 0), 0));
+    setArticlesReference(reference.reduce((s, v) => s + (v.nombre_articles ?? 0), 0));
+    setVisiteursReference(reference.reduce((s, v) => s + (v.nombre_visiteurs ?? 0), 0));
+    setCartesReference(
+      reference.reduce((s, v) => s + (v.nombre_cartes_fidelite ?? 0), 0)
+    );
 
     setPanierArticleActif(boutiqueRes.data.indicateur_panier_article_actif);
     setTauxTransformationActif(boutiqueRes.data.indicateur_taux_transformation_actif);
@@ -293,6 +326,12 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const tauxTransformation =
     visiteursCurrent > 0 ? (freqCurrent / visiteursCurrent) * 100 : null;
   const tauxEncartement = freqCurrent > 0 ? (cartesCurrent / freqCurrent) * 100 : null;
+  const panierArticleReference =
+    freqReference > 0 ? articlesReference / freqReference : null;
+  const tauxTransformationReference =
+    visiteursReference > 0 ? (freqReference / visiteursReference) * 100 : null;
+  const tauxEncartementReference =
+    freqReference > 0 ? (cartesReference / freqReference) * 100 : null;
 
   const isObjectifMode = comparisonMode === "objectif";
   const referenceShortLabel =
@@ -305,6 +344,20 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const panierPct =
     !isObjectifMode && panierCurrent !== null && panierReference !== null
       ? pct(panierCurrent, panierReference)
+      : null;
+  const panierArticlePct =
+    !isObjectifMode && panierArticle !== null && panierArticleReference !== null
+      ? pct(panierArticle, panierArticleReference)
+      : null;
+  const tauxTransformationPct =
+    !isObjectifMode &&
+    tauxTransformation !== null &&
+    tauxTransformationReference !== null
+      ? pct(tauxTransformation, tauxTransformationReference)
+      : null;
+  const tauxEncartementPct =
+    !isObjectifMode && tauxEncartement !== null && tauxEncartementReference !== null
+      ? pct(tauxEncartement, tauxEncartementReference)
       : null;
 
   const caPctAtteint =
@@ -319,6 +372,15 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const diagnostic = isObjectifMode
     ? buildDiagnosticObjectif(caCurrent, panierCurrent, objectif)
     : buildDiagnostic(caPct, freqPct, panierPct, referenceLabel);
+
+  // Tendance du CA pour teinter le bilan : en mode objectif, seul un
+  // objectif atteint est signalé (pas de rouge en cours de période, le
+  // retard n'est pas une baisse).
+  const caTendance = isObjectifMode
+    ? caPctAtteint !== null && caPctAtteint >= 100
+      ? "up"
+      : null
+    : classify(caPct);
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
@@ -398,19 +460,36 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
             <div className="rounded-md border border-border p-4">
               <p className="text-xs text-muted-foreground">Chiffre d&apos;affaires</p>
               <p className="text-2xl font-medium text-foreground">
                 {formatEuros(caCurrent)}
               </p>
-              <p className="text-xs text-faint-foreground">
-                {isObjectifMode
-                  ? objectif
-                    ? `Objectif : ${formatEuros(objectif.ca_cible)} (${caPctAtteint}% atteint)`
-                    : "Aucun objectif défini pour cette période."
-                  : `vs ${referenceShortLabel} : ${formatPct(caPct)}`}
-              </p>
+              {isObjectifMode ? (
+                <p className="text-xs text-faint-foreground">
+                  {objectif ? (
+                    <>
+                      Objectif : {formatEuros(objectif.ca_cible)}{" "}
+                      <span
+                        className={
+                          caPctAtteint !== null && caPctAtteint >= 100
+                            ? "font-medium text-green-600 dark:text-green-400"
+                            : ""
+                        }
+                      >
+                        ({caPctAtteint}% atteint)
+                      </span>
+                    </>
+                  ) : (
+                    "Aucun objectif défini pour cette période."
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs">
+                  <VariationPct value={caPct} suffix={`vs ${referenceShortLabel}`} />
+                </p>
+              )}
               {!isObjectifMode && objectif && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Objectif : {formatEuros(objectif.ca_cible)} (
@@ -428,15 +507,36 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                   ? formatEuros(panierCurrent)
                   : "n/a"}
               </p>
-              <p className="text-xs text-faint-foreground">
-                {isObjectifMode
-                  ? objectif
-                    ? `Objectif : ${formatEuros(objectif.panier_moyen_cible)}${
-                        panierPctAtteint !== null ? ` (${panierPctAtteint}% atteint)` : ""
-                      }`
-                    : "Aucun objectif défini pour cette période."
-                  : `vs ${referenceShortLabel} : ${formatPct(panierPct)}`}
-              </p>
+              {isObjectifMode ? (
+                <p className="text-xs text-faint-foreground">
+                  {objectif ? (
+                    <>
+                      Objectif : {formatEuros(objectif.panier_moyen_cible)}
+                      {panierPctAtteint !== null && (
+                        <span
+                          className={
+                            panierPctAtteint >= 100
+                              ? "font-medium text-green-600 dark:text-green-400"
+                              : ""
+                          }
+                        >
+                          {" "}
+                          ({panierPctAtteint}% atteint)
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    "Aucun objectif défini pour cette période."
+                  )}
+                </p>
+              ) : (
+                <p className="text-xs">
+                  <VariationPct
+                    value={panierPct}
+                    suffix={`vs ${referenceShortLabel}`}
+                  />
+                </p>
+              )}
               {!isObjectifMode && objectif && (
                 <p className="mt-1 text-xs text-muted-foreground">
                   Objectif : {formatEuros(objectif.panier_moyen_cible)}
@@ -448,12 +548,19 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                 </p>
               )}
             </div>
+            <div className="rounded-md border border-border p-4">
+              <p className="text-xs text-muted-foreground">Nombre de tickets</p>
+              <p className="text-2xl font-medium text-foreground">{freqCurrent}</p>
+              {!isObjectifMode && (
+                <p className="text-xs">
+                  <VariationPct
+                    value={freqPct}
+                    suffix={`vs ${referenceShortLabel}`}
+                  />
+                </p>
+              )}
+            </div>
           </div>
-
-          <p className="text-xs text-muted-foreground">
-            Nombre de tickets : {freqCurrent}
-            {!isObjectifMode && ` (${formatPct(freqPct)} vs ${referenceShortLabel})`}
-          </p>
 
           {(panierArticleActif || tauxTransformationActif || tauxEncartementActif) && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
@@ -463,6 +570,14 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                   <p className="text-2xl font-medium text-foreground">
                     {panierArticle !== null ? panierArticle.toFixed(1) : "n/a"}
                   </p>
+                  {!isObjectifMode && (
+                    <p className="text-xs">
+                      <VariationPct
+                        value={panierArticlePct}
+                        suffix={`vs ${referenceShortLabel}`}
+                      />
+                    </p>
+                  )}
                   <p className="text-xs text-faint-foreground">articles / ticket</p>
                 </div>
               )}
@@ -474,6 +589,14 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                       ? `${tauxTransformation.toFixed(1)}%`
                       : "n/a"}
                   </p>
+                  {!isObjectifMode && (
+                    <p className="text-xs">
+                      <VariationPct
+                        value={tauxTransformationPct}
+                        suffix={`vs ${referenceShortLabel}`}
+                      />
+                    </p>
+                  )}
                   <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
                 </div>
               )}
@@ -483,14 +606,33 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                   <p className="text-2xl font-medium text-foreground">
                     {tauxEncartement !== null ? `${tauxEncartement.toFixed(1)}%` : "n/a"}
                   </p>
+                  {!isObjectifMode && (
+                    <p className="text-xs">
+                      <VariationPct
+                        value={tauxEncartementPct}
+                        suffix={`vs ${referenceShortLabel}`}
+                      />
+                    </p>
+                  )}
                   <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
                 </div>
               )}
             </div>
           )}
 
-          <div className="rounded-md bg-card p-4">
-            <p className="text-sm text-foreground">{diagnostic}</p>
+          <div
+            className={`rounded-md border-l-4 bg-card p-4 ${
+              caTendance === "up"
+                ? "border-green-600 dark:border-green-400"
+                : caTendance === "down"
+                  ? "border-red-600 dark:border-red-400"
+                  : "border-border"
+            }`}
+          >
+            <p className="text-xs font-medium text-muted-foreground">Bilan</p>
+            <p className="mt-1 text-sm text-foreground">
+              {renderDiagnostic(diagnostic)}
+            </p>
           </div>
 
           {periode !== "jour" && (
