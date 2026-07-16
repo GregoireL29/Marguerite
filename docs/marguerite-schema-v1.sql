@@ -369,6 +369,27 @@ create table widgets_epingles (
 
 create index idx_widgets_epingles_utilisateur on widgets_epingles(utilisateur_id);
 
+-- Demandes d'entretien : un salarié ou un manager sollicite un entretien
+-- auprès d'un gérant, avec un commentaire libre (l'ordre du jour souhaité).
+-- Contrairement aux congés (traités par le manager de la boutique), la
+-- demande remonte toujours au niveau gérant.
+create type statut_demande_entretien as enum ('en_attente', 'acceptee', 'refusee');
+
+create table demandes_entretien (
+  id uuid primary key default uuid_generate_v4(),
+  demandeur_id uuid not null references utilisateurs(id) on delete cascade,
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  commentaire text not null,
+  statut statut_demande_entretien not null default 'en_attente',
+  date_entretien date,
+  reponse text,
+  traite_par uuid references utilisateurs(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_demandes_entretien_boutique on demandes_entretien(boutique_id);
+create index idx_demandes_entretien_demandeur on demandes_entretien(demandeur_id);
+
 -- Row Level Security
 -- V2 : isolation par structure/boutique. Un manager/salarié n'accède qu'à
 -- sa propre boutique ; un gérant (rôle prévu, pas encore utilisé) accède à
@@ -398,6 +419,7 @@ alter table echeances enable row level security;
 alter table conversations enable row level security;
 alter table conversations_participants enable row level security;
 alter table messages enable row level security;
+alter table demandes_entretien enable row level security;
 alter table widgets_epingles enable row level security;
 
 -- Fonctions d'accès partagées (security definer : bypass RLS en interne
@@ -585,6 +607,32 @@ create policy "acces_par_boutique" on profils_salarie for all to authenticated
 create policy "acces_par_boutique" on demandes_conges for all to authenticated
   using (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
   with check (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
+
+-- Visibilité volontairement plus stricte que le scoping boutique habituel :
+-- seuls le demandeur et les gérants de la structure voient une demande
+-- d'entretien. Un manager ne voit pas celles de ses salariés — la demande
+-- peut justement le concerner.
+create policy "acces_demandes_entretien" on demandes_entretien for all to authenticated
+  using (
+    demandes_entretien.demandeur_id = current_utilisateur_id()
+    or exists (
+      select 1 from utilisateurs u
+      join boutiques b on b.id = demandes_entretien.boutique_id
+      where u.auth_id = auth.uid()
+        and u.role = 'gerant'
+        and u.structure_id = b.structure_id
+    )
+  )
+  with check (
+    demandes_entretien.demandeur_id = current_utilisateur_id()
+    or exists (
+      select 1 from utilisateurs u
+      join boutiques b on b.id = demandes_entretien.boutique_id
+      where u.auth_id = auth.uid()
+        and u.role = 'gerant'
+        and u.structure_id = b.structure_id
+    )
+  );
 
 create policy "acces_annonces_lectures" on annonces_lectures for all to authenticated
   using (
