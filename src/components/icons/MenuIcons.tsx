@@ -184,6 +184,19 @@ export function IconQuestion({ className }: IconProps) {
   );
 }
 
+export function IconSettings({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <path d="M3.5 6.5h9M16 6.5H20.5" />
+      <circle cx="13.5" cy="6.5" r="2" />
+      <path d="M3.5 12h4.5M11.5 12h9" />
+      <circle cx="9.5" cy="12" r="2" />
+      <path d="M3.5 17.5h7M14 17.5h6.5" />
+      <circle cx="11.5" cy="17.5" r="2" />
+    </svg>
+  );
+}
+
 export function IconChevronDown({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
