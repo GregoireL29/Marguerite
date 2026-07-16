@@ -26,6 +26,7 @@ import {
   IconGauge,
   IconPeople,
   IconMoon,
+  IconQuestion,
   IconChevronDown,
 } from "@/components/icons/MenuIcons";
 
@@ -47,6 +48,7 @@ interface CategoryItem {
 }
 
 const ACCUEIL: TabItem = { label: "Accueil", href: "/", icon: IconHome };
+const AIDE: TabItem = { label: "Aide", href: "/aide", icon: IconQuestion };
 
 const CATEGORIES: CategoryItem[] = [
   {
@@ -239,6 +241,18 @@ export function AppMenu() {
             </div>
           );
         })}
+
+        <Link
+          href={AIDE.href}
+          className={`flex shrink-0 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-medium ${
+            pathname === AIDE.href
+              ? "bg-accent text-accent-foreground"
+              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+          }`}
+        >
+          <AIDE.icon className="h-4 w-4 shrink-0" />
+          {AIDE.label}
+        </Link>
       </nav>
     </header>
   );

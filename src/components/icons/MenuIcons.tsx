@@ -174,6 +174,16 @@ export function IconMoon({ className }: IconProps) {
   );
 }
 
+export function IconQuestion({ className }: IconProps) {
+  return (
+    <svg {...base} className={className}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9.8 9.6c0-1.3 1-2.2 2.2-2.2s2.2.9 2.2 2.2c0 1.7-2.2 1.7-2.2 3.4" />
+      <path d="M12 16.2v.1" />
+    </svg>
+  );
+}
+
 export function IconChevronDown({ className }: IconProps) {
   return (
     <svg {...base} className={className}>
