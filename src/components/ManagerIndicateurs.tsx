@@ -18,6 +18,7 @@ import {
   formatPct,
   classify,
   toISODate,
+  addDays,
 } from "@/lib/indicateurs";
 
 type ComparisonMode = "precedente" | "annee_precedente" | "objectif";
@@ -132,6 +133,15 @@ interface Objectif {
   panier_moyen_cible: number;
 }
 
+interface VenteJournaliere {
+  date: string;
+  chiffre_affaires: number;
+  frequentation: number;
+  nombre_articles: number | null;
+  nombre_visiteurs: number | null;
+  nombre_cartes_fidelite: number | null;
+}
+
 // Met en couleur les pourcentages signés du bilan (générés par formatPct)
 // pour que hausses et baisses ressortent au même code visuel que les cartes
 // chiffrées, sans toucher à la construction du texte lui-même.
@@ -173,6 +183,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const [panierArticleActif, setPanierArticleActif] = useState(false);
   const [tauxTransformationActif, setTauxTransformationActif] = useState(false);
   const [tauxEncartementActif, setTauxEncartementActif] = useState(false);
+  const [ventesJournalieres, setVentesJournalieres] = useState<VenteJournaliere[]>([]);
   const [objectif, setObjectif] = useState<Objectif | null>(null);
   const [caCible, setCaCible] = useState("");
   const [panierCible, setPanierCible] = useState("");
@@ -196,7 +207,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
       supabase
         .from("ventes_quotidiennes")
         .select(
-          "chiffre_affaires, frequentation, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite"
+          "date, chiffre_affaires, frequentation, nombre_articles, nombre_visiteurs, nombre_cartes_fidelite"
         )
         .eq("boutique_id", effectiveBoutiqueId)
         .gte("date", toISODate(start))
@@ -251,6 +262,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     }
 
     const current = currentRes.data ?? [];
+    setVentesJournalieres(current as VenteJournaliere[]);
     const reference = referenceRes.data ?? [];
 
     setCaCurrent(current.reduce((s, v) => s + Number(v.chiffre_affaires), 0));
@@ -315,6 +327,54 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     }
 
     await load();
+  }
+
+  // Une ligne par jour de la période affichée, quelle que soit la vente
+  // du jour saisie ou non (0 si absente) — même logique/format que
+  // l'export CSV déjà construit sur Factures fournisseurs.
+  function exporterExcel() {
+    const { start, end } = getRange(periode, anchor);
+    const parJour = new Map(ventesJournalieres.map((v) => [v.date, v]));
+
+    const header = ["Date", "Chiffre d'affaires (€)", "Nombre de tickets", "Panier moyen (€)"];
+    if (panierArticleActif) header.push("Panier article");
+    if (tauxTransformationActif) header.push("Taux de transformation (%)");
+    if (tauxEncartementActif) header.push("Taux d'encartement (%)");
+
+    const rows: string[][] = [];
+    for (let d = start; d <= end; d = addDays(d, 1)) {
+      const iso = toISODate(d);
+      const v = parJour.get(iso);
+      const ca = v ? Number(v.chiffre_affaires) : 0;
+      const tickets = v?.frequentation ?? 0;
+      const panierMoyen = tickets > 0 ? ca / tickets : 0;
+
+      const row = [iso, ca.toFixed(2), String(tickets), panierMoyen.toFixed(2)];
+      if (panierArticleActif) {
+        const articles = v?.nombre_articles ?? null;
+        row.push(articles != null && tickets > 0 ? (articles / tickets).toFixed(1) : "");
+      }
+      if (tauxTransformationActif) {
+        const visiteurs = v?.nombre_visiteurs ?? null;
+        row.push(visiteurs != null && visiteurs > 0 ? ((tickets / visiteurs) * 100).toFixed(1) : "");
+      }
+      if (tauxEncartementActif) {
+        const cartes = v?.nombre_cartes_fidelite ?? null;
+        row.push(cartes != null && tickets > 0 ? ((cartes / tickets) * 100).toFixed(1) : "");
+      }
+      rows.push(row);
+    }
+
+    const csv = [header, ...rows]
+      .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(";"))
+      .join("\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `indicateurs_${toISODate(start)}_${toISODate(end)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   if (!profile) return null;
@@ -386,12 +446,21 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-medium text-foreground">Indicateurs</h1>
-        <Link
-          href="/indicateurs/saisie"
-          className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40"
-        >
-          Saisir les ventes du jour
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exporterExcel}
+            disabled={loading}
+            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40 disabled:opacity-50"
+          >
+            Exporter en Excel
+          </button>
+          <Link
+            href="/indicateurs/saisie"
+            className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40"
+          >
+            Saisir les ventes du jour
+          </Link>
+        </div>
       </div>
 
       <div className="flex gap-1">
