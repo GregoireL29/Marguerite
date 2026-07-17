@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
@@ -16,6 +16,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Marguerite",
   description: "Gestion de planning pour petites structures multi-boutiques",
+  appleWebApp: {
+    capable: true,
+    title: "Marguerite",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#121212" },
+  ],
 };
 
 const THEME_INIT_SCRIPT = `
