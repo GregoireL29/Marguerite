@@ -23,18 +23,33 @@ export function EndOfDayNotifier() {
   const boutiqueId = profile?.boutique_id ?? null;
 
   useEffect(() => {
-    if (!isManager || !boutiqueId) return;
+    if (!isManager || !boutiqueId || !profile) return;
 
     let cancelled = false;
+    let managerEnConge = false;
+    let ready = false;
+    const today = toISODate(new Date());
 
-    supabase
-      .from("boutiques")
-      .select("horaires")
-      .eq("id", boutiqueId)
-      .maybeSingle()
-      .then(({ data }) => {
-        if (!cancelled && data) horairesRef.current = data.horaires as Horaires;
-      });
+    // Un manager en congé validé aujourd'hui ne doit pas recevoir la
+    // notification de fermeture de sa boutique : ce n'est pas lui qui
+    // ferme, quelqu'un d'autre le remplace.
+    Promise.all([
+      supabase.from("boutiques").select("horaires").eq("id", boutiqueId).maybeSingle(),
+      supabase
+        .from("demandes_conges")
+        .select("id")
+        .eq("utilisateur_id", profile.id)
+        .eq("statut", "validee")
+        .lte("date_debut", today)
+        .gte("date_fin", today)
+        .maybeSingle(),
+    ]).then(([boutiqueRes, congeRes]) => {
+      if (cancelled) return;
+      if (boutiqueRes.data) horairesRef.current = boutiqueRes.data.horaires as Horaires;
+      managerEnConge = !!congeRes.data;
+      ready = true;
+      check();
+    });
 
     // Demande de permission une seule fois, jamais réclamée en boucle à
     // chaque session : au pire l'utilisateur l'active plus tard dans les
@@ -50,6 +65,8 @@ export function EndOfDayNotifier() {
     }
 
     function check() {
+      if (!ready || managerEnConge) return;
+
       const horaires = horairesRef.current;
       if (!horaires) return;
 
@@ -79,14 +96,13 @@ export function EndOfDayNotifier() {
       }
     }
 
-    check();
     const interval = setInterval(check, INTERVALLE_VERIF_MS);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, [isManager, boutiqueId]);
+  }, [isManager, boutiqueId, profile]);
 
   if (!showModal) return null;
 
