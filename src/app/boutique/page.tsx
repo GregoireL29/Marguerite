@@ -40,30 +40,67 @@ function GerantBoutiques() {
   const [heureFermeture, setHeureFermeture] = useState("19:00");
   const [creating, setCreating] = useState(false);
 
+  const [indicateursAutresBoutiquesActif, setIndicateursAutresBoutiquesActif] =
+    useState(false);
+  const [savingReglage, setSavingReglage] = useState(false);
+  const [reglageError, setReglageError] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
     setError(null);
 
-    const { data, error: loadError } = await supabase
-      .from("boutiques")
-      .select("id, nom, adresse")
-      .eq("structure_id", profile.structure_id)
-      .order("nom");
+    const [boutiquesRes, structureRes] = await Promise.all([
+      supabase
+        .from("boutiques")
+        .select("id, nom, adresse")
+        .eq("structure_id", profile.structure_id)
+        .order("nom"),
+      supabase
+        .from("structures")
+        .select("indicateurs_autres_boutiques_actif")
+        .eq("id", profile.structure_id)
+        .single(),
+    ]);
 
-    if (loadError) {
-      setError(loadError.message);
+    if (boutiquesRes.error) {
+      setError(boutiquesRes.error.message);
       setLoading(false);
       return;
     }
 
-    setBoutiques(data ?? []);
+    setBoutiques(boutiquesRes.data ?? []);
+    if (structureRes.data) {
+      setIndicateursAutresBoutiquesActif(
+        structureRes.data.indicateurs_autres_boutiques_actif
+      );
+    }
     setLoading(false);
   }, [profile]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  async function handleToggleReglage(checked: boolean) {
+    if (!profile) return;
+    setSavingReglage(true);
+    setReglageError(null);
+
+    const { error: updateError } = await supabase
+      .from("structures")
+      .update({ indicateurs_autres_boutiques_actif: checked })
+      .eq("id", profile.structure_id);
+
+    setSavingReglage(false);
+
+    if (updateError) {
+      setReglageError(updateError.message);
+      return;
+    }
+
+    setIndicateursAutresBoutiquesActif(checked);
+  }
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -126,6 +163,31 @@ function GerantBoutiques() {
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+
+      <div className="flex flex-col gap-3 rounded-md border border-border p-4">
+        <h2 className="text-sm font-medium text-foreground">Réglages de la structure</h2>
+        {reglageError && (
+          <p className="text-sm text-red-600 dark:text-red-400">{reglageError}</p>
+        )}
+        <label className="flex items-start gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={indicateursAutresBoutiquesActif}
+            disabled={savingReglage}
+            onChange={(e) => handleToggleReglage(e.target.checked)}
+            className="mt-0.5"
+          />
+          <span>
+            Voir les indicateurs des autres boutiques
+            <span className="block text-xs text-muted-foreground">
+              Une fois activé, chaque manager peut consulter sur son écran
+              Indicateurs les chiffres des autres boutiques de la structure,
+              en plus des siens. La saisie reste limitée à sa propre
+              boutique.
+            </span>
+          </span>
+        </label>
+      </div>
 
       {showCreate && (
         <form

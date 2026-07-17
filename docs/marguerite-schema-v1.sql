@@ -4,6 +4,11 @@ create extension if not exists "uuid-ossp";
 create table structures (
   id uuid primary key default uuid_generate_v4(),
   nom text not null,
+  -- Réglage activable par le gérant : quand actif, un manager voit sur son
+  -- écran Indicateurs les autres boutiques de la structure en plus de la
+  -- sienne (lecture seule — la saisie des ventes reste bornée à sa propre
+  -- boutique). Même pattern que les 3 indicateurs optionnels de boutiques.
+  indicateurs_autres_boutiques_actif boolean not null default false,
   created_at timestamptz not null default now()
 );
 
@@ -447,6 +452,29 @@ $$;
 revoke all on function user_has_access_to_boutique(uuid) from public;
 grant execute on function user_has_access_to_boutique(uuid) to authenticated;
 
+-- Lecture seule élargie : un manager voit les indicateurs (boutiques,
+-- ventes, objectifs) des autres boutiques de sa structure quand le gérant
+-- a activé structures.indicateurs_autres_boutiques_actif. Volontairement
+-- séparée de user_has_access_to_boutique (qui couvre aussi l'écriture et
+-- bien d'autres tables) : ce réglage n'élargit que la lecture, jamais la
+-- capacité à modifier une autre boutique.
+create or replace function structure_allows_manager_indicateurs_view(target_boutique_id uuid)
+returns boolean
+language sql security definer set search_path = public stable
+as $$
+  select exists (
+    select 1 from utilisateurs u
+    join boutiques b on b.id = target_boutique_id
+    join structures s on s.id = b.structure_id
+    where u.auth_id = auth.uid()
+      and u.role = 'manager'
+      and u.structure_id = b.structure_id
+      and s.indicateurs_autres_boutiques_actif = true
+  );
+$$;
+revoke all on function structure_allows_manager_indicateurs_view(uuid) from public;
+grant execute on function structure_allows_manager_indicateurs_view(uuid) to authenticated;
+
 create or replace function user_is_conversation_participant(target_conversation_id uuid)
 returns boolean
 language sql security definer set search_path = public stable
@@ -502,6 +530,9 @@ create policy "structures_suppression" on structures
 
 create policy "boutiques_lecture" on boutiques
   for select to authenticated using (user_has_access_to_boutique(boutiques.id));
+create policy "boutiques_lecture_indicateurs_structure" on boutiques
+  for select to authenticated
+  using (structure_allows_manager_indicateurs_view(boutiques.id));
 create policy "boutiques_creation" on boutiques
   for insert to authenticated with check (true);
 create policy "boutiques_modification" on boutiques
@@ -534,9 +565,15 @@ create policy "acces_par_boutique" on taches for all to authenticated
 
 create policy "acces_par_boutique" on ventes_quotidiennes for all to authenticated
   using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
+create policy "lecture_indicateurs_structure" on ventes_quotidiennes
+  for select to authenticated
+  using (structure_allows_manager_indicateurs_view(boutique_id));
 
 create policy "acces_par_boutique" on objectifs for all to authenticated
   using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
+create policy "lecture_indicateurs_structure" on objectifs
+  for select to authenticated
+  using (structure_allows_manager_indicateurs_view(boutique_id));
 
 create policy "acces_par_boutique" on documents for all to authenticated
   using (user_has_access_to_boutique(boutique_id)) with check (user_has_access_to_boutique(boutique_id));
