@@ -34,6 +34,12 @@ interface ProfilSalarie {
   solde_conges_jours: number | null;
 }
 
+interface SalaireRow {
+  id: string;
+  utilisateur_id: string;
+  salaire_brut_mensuel: number | null;
+}
+
 const ROLES = [
   { value: "salarie", label: "Salarié" },
   { value: "manager", label: "Manager" },
@@ -61,6 +67,7 @@ interface FormState {
   heures_hebdo: string;
   jours_repos_fixes: JourRepos[];
   solde_conges_jours: string;
+  salaire_brut_mensuel: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -72,11 +79,17 @@ const EMPTY_FORM: FormState = {
   heures_hebdo: "35",
   jours_repos_fixes: [],
   solde_conges_jours: "",
+  salaire_brut_mensuel: "",
 };
 
 export default function EquipePage() {
   const profile = useUserProfile();
+  const isGerant = profile?.role === "gerant";
   const [salaries, setSalaries] = useState<Salarie[]>([]);
+  // Chargée uniquement pour un gérant (voir loadSalaries) : un manager ne
+  // doit jamais déclencher cette requête, la donnée ne doit pas transiter
+  // vers son navigateur même sous une forme masquée à l'écran.
+  const [salairesMap, setSalairesMap] = useState<Record<string, SalaireRow>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mode, setMode] = useState<"list" | "form">("list");
@@ -98,12 +111,31 @@ export default function EquipePage() {
 
     if (error) {
       setError(error.message);
-    } else {
-      setError(null);
-      setSalaries((data ?? []) as unknown as Salarie[]);
+      setLoading(false);
+      return;
     }
+
+    setError(null);
+    setSalaries((data ?? []) as unknown as Salarie[]);
+
+    if (isGerant) {
+      const { data: salairesData, error: salairesError } = await supabase
+        .from("salaires")
+        .select("id, utilisateur_id, salaire_brut_mensuel");
+
+      if (salairesError) {
+        setError(salairesError.message);
+      } else {
+        const map: Record<string, SalaireRow> = {};
+        for (const s of (salairesData ?? []) as SalaireRow[]) {
+          map[s.utilisateur_id] = s;
+        }
+        setSalairesMap(map);
+      }
+    }
+
     setLoading(false);
-  }, []);
+  }, [isGerant]);
 
   useEffect(() => {
     loadSalaries();
@@ -118,6 +150,7 @@ export default function EquipePage() {
 
   function startEdit(salarie: Salarie) {
     const profil = salarie.profils_salarie[0];
+    const salaire = salairesMap[salarie.id];
     setEditingId(salarie.id);
     setForm({
       nom: salarie.nom,
@@ -130,6 +163,10 @@ export default function EquipePage() {
       solde_conges_jours:
         profil?.solde_conges_jours != null
           ? String(profil.solde_conges_jours)
+          : "",
+      salaire_brut_mensuel:
+        salaire?.salaire_brut_mensuel != null
+          ? String(salaire.salaire_brut_mensuel)
           : "",
     });
     setError(null);
@@ -195,6 +232,35 @@ export default function EquipePage() {
     )}&body=${encodeURIComponent(body)}`;
   }
 
+  // Volontairement absente du chemin manager : cette fonction n'est
+  // appelée que si isGerant est vrai (voir les deux appels ci-dessous).
+  async function saveSalaire(utilisateurId: string): Promise<boolean> {
+    if (!profile) return false;
+
+    const salaireBrutMensuel =
+      form.salaire_brut_mensuel.trim() === ""
+        ? null
+        : Number(form.salaire_brut_mensuel);
+
+    const existingSalaire = salairesMap[utilisateurId];
+    const payload = {
+      salaire_brut_mensuel: salaireBrutMensuel,
+      updated_by: profile.id,
+    };
+
+    const { error: salaireError } = existingSalaire
+      ? await supabase.from("salaires").update(payload).eq("id", existingSalaire.id)
+      : await supabase
+          .from("salaires")
+          .insert({ utilisateur_id: utilisateurId, ...payload });
+
+    if (salaireError) {
+      setError(salaireError.message);
+      return false;
+    }
+    return true;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -247,6 +313,14 @@ export default function EquipePage() {
         setSaving(false);
         return;
       }
+
+      if (isGerant) {
+        const ok = await saveSalaire(editingId);
+        if (!ok) {
+          setSaving(false);
+          return;
+        }
+      }
     } else {
       const {
         data: { user: authUser },
@@ -298,6 +372,14 @@ export default function EquipePage() {
         setError(insertProfilError.message);
         setSaving(false);
         return;
+      }
+
+      if (isGerant) {
+        const ok = await saveSalaire(newUser.id);
+        if (!ok) {
+          setSaving(false);
+          return;
+        }
       }
     }
 
@@ -543,6 +625,34 @@ export default function EquipePage() {
               className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
+
+          {isGerant && (
+            <div className="flex flex-col gap-1 rounded-md border border-border p-3">
+              <label
+                htmlFor="salaire_brut_mensuel"
+                className="text-sm font-medium text-foreground"
+              >
+                Salaire brut mensuel (€)
+              </label>
+              <p className="text-xs text-muted-foreground">
+                Visible uniquement par les gérants de la structure.
+              </p>
+              <input
+                id="salaire_brut_mensuel"
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.salaire_brut_mensuel}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    salaire_brut_mensuel: e.target.value,
+                  }))
+                }
+                className="mt-1 rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <span className="text-sm text-muted-foreground">

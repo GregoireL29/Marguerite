@@ -66,6 +66,21 @@ create table profils_salarie (
   updated_at timestamptz not null default now()
 );
 
+-- Table volontairement séparée de profils_salarie plutôt qu'une colonne
+-- dessus : RLS protège des lignes, pas des colonnes, et Supabase ne
+-- mutualise qu'un seul rôle Postgres "authenticated" pour tous les
+-- utilisateurs — impossible de distinguer manager/gérant via un GRANT
+-- par colonne. Isoler la donnée dans sa propre table avec sa propre
+-- policy est la seule façon de garantir qu'un manager n'y accède jamais,
+-- même en interrogeant directement l'API, pas seulement masqué à l'écran.
+create table salaires (
+  id uuid primary key default uuid_generate_v4(),
+  utilisateur_id uuid not null unique references utilisateurs(id) on delete cascade,
+  salaire_brut_mensuel numeric(10,2),
+  updated_at timestamptz not null default now(),
+  updated_by uuid references utilisateurs(id) on delete set null
+);
+
 create type statut_planning as enum ('brouillon', 'genere_ia', 'publie');
 
 create table plannings (
@@ -405,6 +420,7 @@ alter table structures enable row level security;
 alter table boutiques enable row level security;
 alter table utilisateurs enable row level security;
 alter table profils_salarie enable row level security;
+alter table salaires enable row level security;
 alter table plannings enable row level security;
 alter table creneaux enable row level security;
 alter table demandes_conges enable row level security;
@@ -640,6 +656,30 @@ create policy "acces_par_boutique" on creneaux for all to authenticated
 create policy "acces_par_boutique" on profils_salarie for all to authenticated
   using (exists (select 1 from utilisateurs u where u.id = profils_salarie.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
   with check (exists (select 1 from utilisateurs u where u.id = profils_salarie.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
+
+-- Volontairement plus stricte que le pattern boutique habituel : seul un
+-- gérant de la même structure que le salarié concerné peut lire ou écrire
+-- ici, jamais un manager (même s'il a par ailleurs le droit de modifier
+-- le reste du profil salarié via la policy ci-dessus).
+create policy "salaires_gerant_seul" on salaires for all to authenticated
+  using (
+    exists (
+      select 1 from utilisateurs u
+      join utilisateurs cible on cible.id = salaires.utilisateur_id
+      where u.auth_id = auth.uid()
+        and u.role = 'gerant'
+        and u.structure_id = cible.structure_id
+    )
+  )
+  with check (
+    exists (
+      select 1 from utilisateurs u
+      join utilisateurs cible on cible.id = salaires.utilisateur_id
+      where u.auth_id = auth.uid()
+        and u.role = 'gerant'
+        and u.structure_id = cible.structure_id
+    )
+  );
 
 create policy "acces_par_boutique" on demandes_conges for all to authenticated
   using (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
