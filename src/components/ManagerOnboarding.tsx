@@ -47,8 +47,9 @@ interface ProgressionRow {
   score: number | null;
 }
 
-export function ManagerOnboarding() {
+export function ManagerOnboarding({ boutiqueId }: { boutiqueId?: string } = {}) {
   const profile = useUserProfile();
+  const effectiveBoutiqueId = boutiqueId ?? profile?.boutique_id ?? null;
   const [onglet, setOnglet] = useState<Onglet>("modules");
   const [modules, setModules] = useState<Module[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -75,14 +76,14 @@ export function ManagerOnboarding() {
   const [savingQuestion, setSavingQuestion] = useState(false);
 
   const load = useCallback(async () => {
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setLoading(true);
     setError(null);
 
     const { data: modulesData, error: modulesError } = await supabase
       .from("modules_formation")
       .select("id, titre, ordre, support_url")
-      .eq("boutique_id", profile.boutique_id)
+      .eq("boutique_id", effectiveBoutiqueId)
       .order("ordre");
 
     if (modulesError) {
@@ -106,7 +107,7 @@ export function ManagerOnboarding() {
       supabase
         .from("utilisateurs")
         .select("id, nom")
-        .eq("boutique_id", profile.boutique_id)
+        .eq("boutique_id", effectiveBoutiqueId)
         .eq("role", "salarie")
         .order("nom"),
       supabase
@@ -136,7 +137,7 @@ export function ManagerOnboarding() {
     setSalaries(salariesData ?? []);
     setProgression((progressionData ?? []) as ProgressionRow[]);
     setLoading(false);
-  }, [profile]);
+  }, [profile, effectiveBoutiqueId]);
 
   useEffect(() => {
     load();
@@ -144,7 +145,7 @@ export function ManagerOnboarding() {
 
   async function handleCreateModule(e: React.FormEvent) {
     e.preventDefault();
-    if (!profile || !nouveauTitre.trim()) return;
+    if (!profile || !effectiveBoutiqueId || !nouveauTitre.trim()) return;
 
     setCreatingModule(true);
     setError(null);
@@ -153,7 +154,7 @@ export function ManagerOnboarding() {
 
     const { data: newModule, error: insertError } = await supabase
       .from("modules_formation")
-      .insert({ boutique_id: profile.boutique_id, titre: nouveauTitre.trim(), ordre })
+      .insert({ boutique_id: effectiveBoutiqueId, titre: nouveauTitre.trim(), ordre })
       .select("id")
       .single();
 
@@ -164,7 +165,7 @@ export function ManagerOnboarding() {
     }
 
     if (nouveauFile) {
-      const path = `${profile.boutique_id}/onboarding/${newModule.id}/${Date.now()}_${nouveauFile.name}`;
+      const path = `${effectiveBoutiqueId}/onboarding/${newModule.id}/${Date.now()}_${nouveauFile.name}`;
       const { error: uploadError } = await supabase.storage.from("documents").upload(path, nouveauFile);
       if (!uploadError) {
         await supabase.from("modules_formation").update({ support_url: path }).eq("id", newModule.id);
@@ -179,11 +180,11 @@ export function ManagerOnboarding() {
   }
 
   async function handleReplaceSupport(moduleId: string, file: File) {
-    if (!profile) return;
+    if (!profile || !effectiveBoutiqueId) return;
     setReplacingSupportId(moduleId);
     setError(null);
 
-    const path = `${profile.boutique_id}/onboarding/${moduleId}/${Date.now()}_${file.name}`;
+    const path = `${effectiveBoutiqueId}/onboarding/${moduleId}/${Date.now()}_${file.name}`;
     const { error: uploadError } = await supabase.storage.from("documents").upload(path, file);
 
     if (uploadError) {
