@@ -516,6 +516,117 @@ $$;
 revoke all on function user_belongs_to_structure(uuid) from public;
 grant execute on function user_belongs_to_structure(uuid) to authenticated;
 
+-- Verrou anti-auto-validation sur demandes_conges et notes_frais : les
+-- policies RLS "for all" de ces deux tables ne distinguent pas salarié de
+-- manager (seule l'appartenance à la boutique compte), ce qui laisserait
+-- n'importe qui positionner le statut de sa propre ligne via un appel API
+-- direct, à la création (insert) comme lors d'une décision ultérieure
+-- (update) — RLS protège des lignes, pas d'un sous-ensemble de colonnes
+-- selon l'opération. Un trigger BEFORE INSERT OR UPDATE comble ce trou
+-- sans toucher aux policies existantes (lecture, création de sa propre
+-- demande restent inchangées).
+--
+-- Cas particulier volontairement préservé : un gérant n'a personne
+-- au-dessus de lui pour arbitrer ses propres demandes — il reste
+-- autorisé à valider/rembourser ses propres lignes. Un manager, en
+-- revanche, ne peut jamais le faire : sa propre demande doit être
+-- traitée par un gérant (déjà la règle d'affichage côté UI, désormais
+-- appliquée aussi en base).
+
+create or replace function check_demandes_conges_statut_ecriture()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+declare
+  demandeur record;
+begin
+  -- Contrairement à notes_frais, aucun rôle n'a de raccourci à la
+  -- création : une demande de congés démarre toujours en_attente, y
+  -- compris pour un gérant (l'exception "personne au-dessus de lui" ne
+  -- s'applique qu'à une décision ultérieure sur une ligne déjà créée,
+  -- jamais à l'insert lui-même).
+  if TG_OP = 'INSERT' then
+    if new.statut <> 'en_attente' then
+      raise exception 'Une demande de congés doit toujours être créée avec le statut "en_attente".';
+    end if;
+    return new;
+  end if;
+
+  if new.statut = old.statut then
+    return new;
+  end if;
+
+  select id, role, boutique_id, structure_id into demandeur
+  from utilisateurs where id = new.utilisateur_id;
+
+  if not exists (
+    select 1 from utilisateurs decideur
+    where decideur.auth_id = auth.uid()
+      and decideur.role in ('manager', 'gerant')
+      and (
+        (demandeur.boutique_id is not null and user_has_access_to_boutique(demandeur.boutique_id))
+        or (demandeur.boutique_id is null and user_belongs_to_structure(demandeur.structure_id) and decideur.role = 'gerant')
+      )
+      and (decideur.id <> demandeur.id or demandeur.role = 'gerant')
+  ) then
+    raise exception 'Seul un manager ou un gérant peut positionner ce statut de demande de congés, jamais le demandeur lui-même (sauf un gérant, qui n''a personne au-dessus de lui).';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_demandes_conges_statut
+  before insert or update on demandes_conges
+  for each row execute function check_demandes_conges_statut_ecriture();
+
+-- Même principe pour notes_frais, avec une exception supplémentaire à
+-- l'insert : un manager (ou un gérant) qui dépose une note pour lui-même
+-- la crée directement en "validee" (personne pour la valider en première
+-- ligne, comportement déjà voulu côté UI) — jamais via un update ultérieur
+-- sur sa propre ligne, seulement au moment de la création.
+create or replace function check_notes_frais_statut_ecriture()
+returns trigger
+language plpgsql security definer set search_path = public
+as $$
+declare
+  demandeur record;
+begin
+  if TG_OP = 'UPDATE' and new.statut = old.statut then
+    return new;
+  end if;
+  if TG_OP = 'INSERT' and new.statut = 'en_attente' then
+    return new;
+  end if;
+
+  select id, role, boutique_id, structure_id into demandeur
+  from utilisateurs where id = new.utilisateur_id;
+
+  if not exists (
+    select 1 from utilisateurs decideur
+    where decideur.auth_id = auth.uid()
+      and decideur.role in ('manager', 'gerant')
+      and (
+        (demandeur.boutique_id is not null and user_has_access_to_boutique(demandeur.boutique_id))
+        or (demandeur.boutique_id is null and user_belongs_to_structure(demandeur.structure_id))
+      )
+      and (
+        TG_OP = 'INSERT'
+        or decideur.id <> demandeur.id
+        or demandeur.role = 'gerant'
+      )
+  ) then
+    raise exception 'Statut de note de frais non autorisé pour cet utilisateur.';
+  end if;
+
+  return new;
+end;
+$$;
+
+create trigger trg_notes_frais_statut
+  before insert or update on notes_frais
+  for each row execute function check_notes_frais_statut_ecriture();
+
 create or replace function current_utilisateur_id()
 returns uuid
 language sql security definer set search_path = public stable
@@ -681,9 +792,50 @@ create policy "salaires_gerant_seul" on salaires for all to authenticated
     )
   );
 
+-- user_has_access_to_boutique(u.boutique_id) ne suffit pas seule : un
+-- gérant demandeur a boutique_id null, et cette fonction renvoie toujours
+-- false face à une cible nulle (même pattern que le null-handling déjà
+-- fait sur acces_utilisateurs). Sans le second membre du or, un gérant ne
+-- pouvait tout simplement jamais poser sa propre demande de congés.
+-- Scope volontairement resserré au demandeur lui-même et aux gérants de
+-- sa structure (pas "tout membre de la structure" comme sur
+-- acces_utilisateurs) : une demande de congés reste une donnée plus
+-- sensible qu'un simple profil.
 create policy "acces_par_boutique" on demandes_conges for all to authenticated
-  using (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)))
-  with check (exists (select 1 from utilisateurs u where u.id = demandes_conges.utilisateur_id and user_has_access_to_boutique(u.boutique_id)));
+  using (
+    exists (
+      select 1 from utilisateurs u
+      where u.id = demandes_conges.utilisateur_id
+        and (
+          user_has_access_to_boutique(u.boutique_id)
+          or (
+            u.boutique_id is null
+            and exists (
+              select 1 from utilisateurs caller
+              where caller.auth_id = auth.uid()
+                and (caller.id = u.id or (caller.role = 'gerant' and caller.structure_id = u.structure_id))
+            )
+          )
+        )
+    )
+  )
+  with check (
+    exists (
+      select 1 from utilisateurs u
+      where u.id = demandes_conges.utilisateur_id
+        and (
+          user_has_access_to_boutique(u.boutique_id)
+          or (
+            u.boutique_id is null
+            and exists (
+              select 1 from utilisateurs caller
+              where caller.auth_id = auth.uid()
+                and (caller.id = u.id or (caller.role = 'gerant' and caller.structure_id = u.structure_id))
+            )
+          )
+        )
+    )
+  );
 
 -- Visibilité volontairement plus stricte que le scoping boutique habituel :
 -- seuls le demandeur et les gérants de la structure voient une demande
