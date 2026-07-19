@@ -319,15 +319,23 @@ export function WidgetEcheancesProches() {
     let cancelled = false;
 
     (async () => {
-      const { data: rows } = await supabase
+      let query = supabase
         .from("echeances")
         .select("id, titre, date_echeance, statut")
-        .or(
-          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
-        )
         .neq("statut", "faite")
         .order("date_echeance", { ascending: true })
         .limit(3);
+
+      // Un gérant n'a pas de boutique_id : la RLS restreint déjà aux
+      // échéances de sa structure (toutes boutiques), inutile de filtrer sur
+      // boutique_id (et invalide en SQL : eq.null n'est pas is.null).
+      if (profile.boutique_id) {
+        query = query.or(
+          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+        );
+      }
+
+      const { data: rows } = await query;
 
       if (!cancelled) setEcheances((rows ?? []) as EcheanceRow[]);
     })();

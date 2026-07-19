@@ -28,11 +28,17 @@ export function WidgetDernieresAnnonces() {
       let query = supabase
         .from("annonces")
         .select("id, titre, created_at")
-        .or(
-          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
-        )
         .order("created_at", { ascending: false })
         .limit(3);
+
+      // Un gérant n'a pas de boutique_id : la RLS restreint déjà aux
+      // annonces de sa structure (toutes boutiques), inutile de filtrer sur
+      // boutique_id (et invalide en SQL : eq.null n'est pas is.null).
+      if (profile.boutique_id) {
+        query = query.or(
+          `boutique_id.eq.${profile.boutique_id},and(boutique_id.is.null,structure_id.eq.${profile.structure_id})`
+        );
+      }
 
       if (profile.role === "salarie") {
         query = query.eq("cible_role", "tous");
