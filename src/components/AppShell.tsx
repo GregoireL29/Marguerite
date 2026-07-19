@@ -100,6 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // dans la fenêtre où un compte fraîchement inscrit n'est pas encore relié.
   const isJoinRoute = pathname?.startsWith("/rejoindre/") ?? false;
   const isLoginRoute = pathname === "/login";
+  const isPublicRoute = pathname === "/confidentialite";
 
   // Sans session, aucune page protégée n'a de contenu à afficher (chacune
   // se contente de rendre `null` faute de profil) : sans cette redirection,
@@ -113,10 +114,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   // /login pendant cette fenêtre (status encore "logged-out" mais session
   // déjà posée), annulant la redirection légitime de la page de connexion.
   useEffect(() => {
-    if (status === "logged-out" && !session && !isLoginRoute && !isJoinRoute) {
+    if (status === "logged-out" && !session && !isLoginRoute && !isJoinRoute && !isPublicRoute) {
       router.replace("/login");
     }
-  }, [status, session, isLoginRoute, isJoinRoute, router]);
+  }, [status, session, isLoginRoute, isJoinRoute, isPublicRoute, router]);
 
   if (status === "loading") {
     return null;
