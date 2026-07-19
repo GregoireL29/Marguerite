@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 import { MargueriteLogo } from "@/components/MargueriteLogo";
@@ -246,6 +247,13 @@ export default function LoginPage() {
             </div>
           )}
         </div>
+
+        <Link
+          href="/confidentialite"
+          className="mt-8 text-xs text-faint-foreground underline underline-offset-2 hover:text-muted-foreground"
+        >
+          Confidentialité et sécurité
+        </Link>
       </main>
     </>
   );
