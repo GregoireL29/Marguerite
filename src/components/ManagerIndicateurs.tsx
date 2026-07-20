@@ -473,9 +473,11 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     : classify(caPct);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-12 px-4 py-10 sm:px-6">
       <div className="flex items-center justify-between gap-4">
-        <h1 className="text-xl font-medium text-foreground">Indicateurs</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Indicateurs
+        </h1>
         <div className="flex items-center gap-2">
           <button
             onClick={exporterExcel}
@@ -493,64 +495,66 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         </div>
       </div>
 
-      <div className="flex gap-1">
-        {PERIODES.map((p) => (
-          <button
-            key={p.value}
-            onClick={() => setPeriode(p.value)}
-            className={`rounded-md px-3 py-1.5 text-sm font-medium ${
-              periode === p.value
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-border/40"
-            }`}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setAnchor((a) => navigateAnchor(periode, a, -1))}
-          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
-          aria-label="Période précédente"
-        >
-          &lsaquo;
-        </button>
-        <span className="text-sm font-medium capitalize text-foreground">
-          {formatRangeLabel(periode, start, end)}
-        </span>
-        <button
-          onClick={() => setAnchor((a) => navigateAnchor(periode, a, 1))}
-          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
-          aria-label="Période suivante"
-        >
-          &rsaquo;
-        </button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <p className="text-sm text-muted-foreground">Comparer à</p>
-        <div className="flex flex-wrap gap-1">
-          {COMPARISON_OPTIONS.map((opt) => (
+      <div className="flex flex-col gap-4">
+        <div className="flex gap-1">
+          {PERIODES.map((p) => (
             <button
-              key={opt.value}
-              onClick={() => setComparisonMode(opt.value)}
-              disabled={opt.value === "objectif" && periode === "jour"}
-              className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30 ${
-                comparisonMode === opt.value
+              key={p.value}
+              onClick={() => setPeriode(p.value)}
+              className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                periode === p.value
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:bg-border/40"
               }`}
             >
-              {opt.label}
+              {p.label}
             </button>
           ))}
         </div>
-        <p className="text-xs text-faint-foreground">
-          Comparaison active :{" "}
-          {COMPARISON_OPTIONS.find((o) => o.value === comparisonMode)?.label}
-        </p>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setAnchor((a) => navigateAnchor(periode, a, -1))}
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
+            aria-label="Période précédente"
+          >
+            &lsaquo;
+          </button>
+          <span className="text-sm font-medium capitalize text-foreground">
+            {formatRangeLabel(periode, start, end)}
+          </span>
+          <button
+            onClick={() => setAnchor((a) => navigateAnchor(periode, a, 1))}
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
+            aria-label="Période suivante"
+          >
+            &rsaquo;
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <p className="text-sm text-muted-foreground">Comparer à</p>
+          <div className="flex flex-wrap gap-1">
+            {COMPARISON_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={() => setComparisonMode(opt.value)}
+                disabled={opt.value === "objectif" && periode === "jour"}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-30 ${
+                  comparisonMode === opt.value
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-border/40"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-faint-foreground">
+            Comparaison active :{" "}
+            {COMPARISON_OPTIONS.find((o) => o.value === comparisonMode)?.label}
+          </p>
+        </div>
       </div>
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
@@ -559,193 +563,193 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+          <div className="flex flex-col gap-10">
+            {/* Chiffre d'affaires — le seul chiffre "héros" de l'écran. */}
             <div>
-              <p className="text-xs text-muted-foreground">Chiffre d&apos;affaires</p>
-              <p className="text-3xl font-semibold text-foreground">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                Chiffre d&apos;affaires
+              </p>
+              <p className="mt-1 text-6xl font-semibold tracking-tight text-foreground">
                 {formatEuros(caCurrent)}
               </p>
-              {isObjectifMode ? (
-                <p className="text-xs text-faint-foreground">
-                  {objectif ? (
-                    <>
-                      Objectif : {formatEuros(objectif.ca_cible)}{" "}
-                      <span
-                        className={
-                          caPctAtteint !== null && caPctAtteint >= 100
-                            ? "font-medium text-green-600 dark:text-green-400"
-                            : ""
-                        }
-                      >
-                        ({caPctAtteint}% atteint)
-                      </span>
-                    </>
-                  ) : (
-                    "Aucun objectif défini pour cette période."
-                  )}
-                </p>
-              ) : (
-                <p className="text-xs">
-                  <VariationPct value={caPct} suffix={`vs ${referenceShortLabel}`} />
-                </p>
-              )}
-              {!isObjectifMode && objectif && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Objectif : {formatEuros(objectif.ca_cible)} (
-                  {objectif.ca_cible > 0
-                    ? Math.round((caCurrent / objectif.ca_cible) * 100)
-                    : 0}
-                  %)
-                </p>
-              )}
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Panier moyen</p>
-              <p className="text-3xl font-semibold text-foreground">
-                {panierCurrent !== null
-                  ? formatEuros(panierCurrent)
-                  : "n/a"}
-              </p>
-              {isObjectifMode ? (
-                <p className="text-xs text-faint-foreground">
-                  {objectif ? (
-                    <>
-                      Objectif : {formatEuros(objectif.panier_moyen_cible)}
-                      {panierPctAtteint !== null && (
+              <div className="mt-2">
+                {isObjectifMode ? (
+                  <p className="text-xs text-faint-foreground">
+                    {objectif ? (
+                      <>
+                        Objectif : {formatEuros(objectif.ca_cible)}{" "}
                         <span
                           className={
-                            panierPctAtteint >= 100
+                            caPctAtteint !== null && caPctAtteint >= 100
                               ? "font-medium text-green-600 dark:text-green-400"
                               : ""
                           }
                         >
-                          {" "}
-                          ({panierPctAtteint}% atteint)
+                          ({caPctAtteint}% atteint)
                         </span>
-                      )}
-                    </>
-                  ) : (
-                    "Aucun objectif défini pour cette période."
-                  )}
-                </p>
-              ) : (
-                <p className="text-xs">
-                  <VariationPct
-                    value={panierPct}
-                    suffix={`vs ${referenceShortLabel}`}
-                  />
-                </p>
-              )}
-              {!isObjectifMode && objectif && (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Objectif : {formatEuros(objectif.panier_moyen_cible)}
-                  {panierCurrent !== null &&
-                    objectif.panier_moyen_cible > 0 &&
-                    ` (${Math.round(
-                      (panierCurrent / objectif.panier_moyen_cible) * 100
-                    )}%)`}
-                </p>
-              )}
+                      </>
+                    ) : (
+                      "Aucun objectif défini pour cette période."
+                    )}
+                  </p>
+                ) : (
+                  <VariationPct value={caPct} suffix={`vs ${referenceShortLabel}`} />
+                )}
+                {!isObjectifMode && objectif && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Objectif : {formatEuros(objectif.ca_cible)} (
+                    {objectif.ca_cible > 0
+                      ? Math.round((caCurrent / objectif.ca_cible) * 100)
+                      : 0}
+                    %)
+                  </p>
+                )}
+              </div>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Nombre de tickets</p>
-              <p className="text-3xl font-semibold text-foreground">{freqCurrent}</p>
-              {!isObjectifMode && (
-                <p className="text-xs">
-                  <VariationPct
-                    value={freqPct}
-                    suffix={`vs ${referenceShortLabel}`}
-                  />
+
+            {/* Panier moyen / nombre de tickets — importants, mais nettement
+                en retrait par rapport au CA. */}
+            <div className="grid grid-cols-2 gap-10">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Panier moyen
                 </p>
-              )}
+                <p className="mt-1 text-4xl font-semibold text-foreground">
+                  {panierCurrent !== null ? formatEuros(panierCurrent) : "n/a"}
+                </p>
+                <div className="mt-1">
+                  {isObjectifMode ? (
+                    <p className="text-xs text-faint-foreground">
+                      {objectif ? (
+                        <>
+                          Objectif : {formatEuros(objectif.panier_moyen_cible)}
+                          {panierPctAtteint !== null && (
+                            <span
+                              className={
+                                panierPctAtteint >= 100
+                                  ? "font-medium text-green-600 dark:text-green-400"
+                                  : ""
+                              }
+                            >
+                              {" "}
+                              ({panierPctAtteint}% atteint)
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        "Aucun objectif défini pour cette période."
+                      )}
+                    </p>
+                  ) : (
+                    <VariationPct value={panierPct} suffix={`vs ${referenceShortLabel}`} />
+                  )}
+                  {!isObjectifMode && objectif && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Objectif : {formatEuros(objectif.panier_moyen_cible)}
+                      {panierCurrent !== null &&
+                        objectif.panier_moyen_cible > 0 &&
+                        ` (${Math.round(
+                          (panierCurrent / objectif.panier_moyen_cible) * 100
+                        )}%)`}
+                    </p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Nombre de tickets
+                </p>
+                <p className="mt-1 text-4xl font-semibold text-foreground">
+                  {freqCurrent}
+                </p>
+                {!isObjectifMode && (
+                  <div className="mt-1">
+                    <VariationPct value={freqPct} suffix={`vs ${referenceShortLabel}`} />
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
           {(panierArticleActif || tauxTransformationActif || tauxEncartementActif) && (
-            <div className="flex flex-col gap-3 border-t border-border pt-6">
-              <p className="text-xs font-medium uppercase tracking-wide text-faint-foreground">
+            <div className="flex flex-col gap-6 border-t border-border pt-8">
+              <p className="text-xs uppercase tracking-wide text-faint-foreground">
                 Indicateurs optionnels
               </p>
-              <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+              <div className="grid grid-cols-3 gap-6">
                 {panierArticleActif && (
                   <div>
                     <p className="text-xs text-muted-foreground">Panier article</p>
-                    <p className="text-xl font-medium text-foreground">
+                    <p className="mt-1 text-lg font-medium text-foreground">
                       {panierArticle !== null ? panierArticle.toFixed(1) : "n/a"}
                     </p>
+                    <p className="text-xs text-faint-foreground">articles / ticket</p>
                     {!isObjectifMode && (
-                      <p className="text-xs">
+                      <div className="mt-1">
                         <VariationPct
                           value={panierArticlePct}
                           suffix={`vs ${referenceShortLabel}`}
                         />
-                      </p>
+                      </div>
                     )}
-                    <p className="text-xs text-faint-foreground">articles / ticket</p>
                   </div>
                 )}
                 {tauxTransformationActif && (
                   <div>
                     <p className="text-xs text-muted-foreground">Taux de transformation</p>
-                    <p className="text-xl font-medium text-foreground">
+                    <p className="mt-1 text-lg font-medium text-foreground">
                       {tauxTransformation !== null
                         ? `${tauxTransformation.toFixed(1)}%`
                         : "n/a"}
                     </p>
+                    <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
                     {!isObjectifMode && (
-                      <p className="text-xs">
+                      <div className="mt-1">
                         <VariationPct
                           value={tauxTransformationPct}
                           suffix={`vs ${referenceShortLabel}`}
                         />
-                      </p>
+                      </div>
                     )}
-                    <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
                   </div>
                 )}
                 {tauxEncartementActif && (
                   <div>
                     <p className="text-xs text-muted-foreground">Taux d&apos;encartement</p>
-                    <p className="text-xl font-medium text-foreground">
+                    <p className="mt-1 text-lg font-medium text-foreground">
                       {tauxEncartement !== null ? `${tauxEncartement.toFixed(1)}%` : "n/a"}
                     </p>
+                    <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
                     {!isObjectifMode && (
-                      <p className="text-xs">
+                      <div className="mt-1">
                         <VariationPct
                           value={tauxEncartementPct}
                           suffix={`vs ${referenceShortLabel}`}
                         />
-                      </p>
+                      </div>
                     )}
-                    <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          <div
-            className={`rounded-md border-l-4 bg-card p-5 ${
-              caTendance === "up"
-                ? "border-green-600 dark:border-green-400"
-                : caTendance === "down"
-                  ? "border-red-600 dark:border-red-400"
-                  : "border-border"
-            }`}
-          >
-            <p className="text-xs font-medium text-muted-foreground">Bilan</p>
-            <p className="mt-1 text-sm leading-relaxed text-foreground">
+          <div className="flex flex-col gap-1 border-t border-border pt-8">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Bilan
+            </p>
+            <p className="text-base leading-relaxed text-foreground">
               {renderDiagnostic(diagnostic)}
             </p>
           </div>
 
-          <details className="group border-t border-border pt-4">
+          <details className="group border-t border-border pt-8">
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
               Réglages
               <IconChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
 
-            <div className="mt-4 flex flex-col gap-6">
+            <div className="mt-6 flex flex-col gap-8">
               {periode !== "jour" && (
                 <form onSubmit={handleSaveObjectif} className="flex flex-col gap-3">
                   <p className="text-sm font-medium text-foreground">
