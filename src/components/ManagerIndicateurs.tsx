@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import { VariationPct } from "@/components/VariationPct";
+import { IconChevronDown } from "@/components/icons/MenuIcons";
 import {
   type Periode,
   PERIODES,
@@ -472,7 +473,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     : classify(caPct);
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-8">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-xl font-medium text-foreground">Indicateurs</h1>
         <div className="flex items-center gap-2">
@@ -558,10 +559,10 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-            <div className="rounded-md border border-border p-4">
+          <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+            <div>
               <p className="text-xs text-muted-foreground">Chiffre d&apos;affaires</p>
-              <p className="text-2xl font-medium text-foreground">
+              <p className="text-3xl font-semibold text-foreground">
                 {formatEuros(caCurrent)}
               </p>
               {isObjectifMode ? (
@@ -598,9 +599,9 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                 </p>
               )}
             </div>
-            <div className="rounded-md border border-border p-4">
+            <div>
               <p className="text-xs text-muted-foreground">Panier moyen</p>
-              <p className="text-2xl font-medium text-foreground">
+              <p className="text-3xl font-semibold text-foreground">
                 {panierCurrent !== null
                   ? formatEuros(panierCurrent)
                   : "n/a"}
@@ -646,9 +647,9 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
                 </p>
               )}
             </div>
-            <div className="rounded-md border border-border p-4">
+            <div>
               <p className="text-xs text-muted-foreground">Nombre de tickets</p>
-              <p className="text-2xl font-medium text-foreground">{freqCurrent}</p>
+              <p className="text-3xl font-semibold text-foreground">{freqCurrent}</p>
               {!isObjectifMode && (
                 <p className="text-xs">
                   <VariationPct
@@ -661,65 +662,70 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
           </div>
 
           {(panierArticleActif || tauxTransformationActif || tauxEncartementActif) && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-              {panierArticleActif && (
-                <div className="rounded-md border border-border p-4">
-                  <p className="text-xs text-muted-foreground">Panier article</p>
-                  <p className="text-2xl font-medium text-foreground">
-                    {panierArticle !== null ? panierArticle.toFixed(1) : "n/a"}
-                  </p>
-                  {!isObjectifMode && (
-                    <p className="text-xs">
-                      <VariationPct
-                        value={panierArticlePct}
-                        suffix={`vs ${referenceShortLabel}`}
-                      />
+            <div className="flex flex-col gap-3 border-t border-border pt-6">
+              <p className="text-xs font-medium uppercase tracking-wide text-faint-foreground">
+                Indicateurs optionnels
+              </p>
+              <div className="grid grid-cols-2 gap-6 sm:grid-cols-3">
+                {panierArticleActif && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Panier article</p>
+                    <p className="text-xl font-medium text-foreground">
+                      {panierArticle !== null ? panierArticle.toFixed(1) : "n/a"}
                     </p>
-                  )}
-                  <p className="text-xs text-faint-foreground">articles / ticket</p>
-                </div>
-              )}
-              {tauxTransformationActif && (
-                <div className="rounded-md border border-border p-4">
-                  <p className="text-xs text-muted-foreground">Taux de transformation</p>
-                  <p className="text-2xl font-medium text-foreground">
-                    {tauxTransformation !== null
-                      ? `${tauxTransformation.toFixed(1)}%`
-                      : "n/a"}
-                  </p>
-                  {!isObjectifMode && (
-                    <p className="text-xs">
-                      <VariationPct
-                        value={tauxTransformationPct}
-                        suffix={`vs ${referenceShortLabel}`}
-                      />
+                    {!isObjectifMode && (
+                      <p className="text-xs">
+                        <VariationPct
+                          value={panierArticlePct}
+                          suffix={`vs ${referenceShortLabel}`}
+                        />
+                      </p>
+                    )}
+                    <p className="text-xs text-faint-foreground">articles / ticket</p>
+                  </div>
+                )}
+                {tauxTransformationActif && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Taux de transformation</p>
+                    <p className="text-xl font-medium text-foreground">
+                      {tauxTransformation !== null
+                        ? `${tauxTransformation.toFixed(1)}%`
+                        : "n/a"}
                     </p>
-                  )}
-                  <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
-                </div>
-              )}
-              {tauxEncartementActif && (
-                <div className="rounded-md border border-border p-4">
-                  <p className="text-xs text-muted-foreground">Taux d&apos;encartement</p>
-                  <p className="text-2xl font-medium text-foreground">
-                    {tauxEncartement !== null ? `${tauxEncartement.toFixed(1)}%` : "n/a"}
-                  </p>
-                  {!isObjectifMode && (
-                    <p className="text-xs">
-                      <VariationPct
-                        value={tauxEncartementPct}
-                        suffix={`vs ${referenceShortLabel}`}
-                      />
+                    {!isObjectifMode && (
+                      <p className="text-xs">
+                        <VariationPct
+                          value={tauxTransformationPct}
+                          suffix={`vs ${referenceShortLabel}`}
+                        />
+                      </p>
+                    )}
+                    <p className="text-xs text-faint-foreground">tickets / visiteurs</p>
+                  </div>
+                )}
+                {tauxEncartementActif && (
+                  <div>
+                    <p className="text-xs text-muted-foreground">Taux d&apos;encartement</p>
+                    <p className="text-xl font-medium text-foreground">
+                      {tauxEncartement !== null ? `${tauxEncartement.toFixed(1)}%` : "n/a"}
                     </p>
-                  )}
-                  <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
-                </div>
-              )}
+                    {!isObjectifMode && (
+                      <p className="text-xs">
+                        <VariationPct
+                          value={tauxEncartementPct}
+                          suffix={`vs ${referenceShortLabel}`}
+                        />
+                      </p>
+                    )}
+                    <p className="text-xs text-faint-foreground">cartes créées / ticket</p>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           <div
-            className={`rounded-md border-l-4 bg-card p-4 ${
+            className={`rounded-md border-l-4 bg-card p-5 ${
               caTendance === "up"
                 ? "border-green-600 dark:border-green-400"
                 : caTendance === "down"
@@ -728,133 +734,139 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
             }`}
           >
             <p className="text-xs font-medium text-muted-foreground">Bilan</p>
-            <p className="mt-1 text-sm text-foreground">
+            <p className="mt-1 text-sm leading-relaxed text-foreground">
               {renderDiagnostic(diagnostic)}
             </p>
           </div>
 
-          {periode !== "jour" && (
-            <form
-              onSubmit={handleSaveObjectif}
-              className="flex flex-col gap-3 rounded-md border border-border p-4"
-            >
-              <p className="text-sm font-medium text-foreground">
-                Objectif pour cette période
-              </p>
-              <div className="flex gap-3">
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <label htmlFor="ca_cible" className="text-sm text-muted-foreground">
-                    CA cible (€)
-                  </label>
-                  <input
-                    id="ca_cible"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={caCible}
-                    onChange={(e) => setCaCible(e.target.value)}
-                    className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-                  />
-                </div>
-                <div className="flex min-w-0 flex-1 flex-col gap-1">
-                  <label
-                    htmlFor="panier_cible"
-                    className="text-sm text-muted-foreground"
-                  >
-                    Panier moyen cible (€)
-                  </label>
-                  <input
-                    id="panier_cible"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    required
-                    value={panierCible}
-                    onChange={(e) => setPanierCible(e.target.value)}
-                    className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={saving}
-                className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
-              >
-                {saving
-                  ? "Enregistrement..."
-                  : objectif
-                    ? "Mettre à jour l'objectif"
-                    : "Définir l'objectif"}
-              </button>
-            </form>
-          )}
+          <details className="group border-t border-border pt-4">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-foreground [&::-webkit-details-marker]:hidden">
+              Réglages
+              <IconChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
 
-          <div className="flex flex-col gap-3 rounded-md border border-border p-4">
-            <h2 className="text-sm font-medium text-foreground">
-              Indicateurs optionnels
-            </h2>
-            <label className="flex items-start gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={panierArticleActif}
-                disabled={savingReglages}
-                onChange={(e) =>
-                  handleToggleIndicateurOptionnel(
-                    "indicateur_panier_article_actif",
-                    e.target.checked
-                  )
-                }
-                className="mt-0.5"
-              />
-              <span>
-                Panier article
-                <span className="block text-xs text-muted-foreground">
-                  Nombre moyen d&apos;articles par ticket.
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={tauxTransformationActif}
-                disabled={savingReglages}
-                onChange={(e) =>
-                  handleToggleIndicateurOptionnel(
-                    "indicateur_taux_transformation_actif",
-                    e.target.checked
-                  )
-                }
-                className="mt-0.5"
-              />
-              <span>
-                Taux de transformation
-                <span className="block text-xs text-muted-foreground">
-                  Part des visiteurs qui achètent (tickets / visiteurs).
-                </span>
-              </span>
-            </label>
-            <label className="flex items-start gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={tauxEncartementActif}
-                disabled={savingReglages}
-                onChange={(e) =>
-                  handleToggleIndicateurOptionnel(
-                    "indicateur_taux_encartement_actif",
-                    e.target.checked
-                  )
-                }
-                className="mt-0.5"
-              />
-              <span>
-                Taux d&apos;encartement
-                <span className="block text-xs text-muted-foreground">
-                  Part des tickets avec création d&apos;une carte de fidélité.
-                </span>
-              </span>
-            </label>
-          </div>
+            <div className="mt-4 flex flex-col gap-6">
+              {periode !== "jour" && (
+                <form onSubmit={handleSaveObjectif} className="flex flex-col gap-3">
+                  <p className="text-sm font-medium text-foreground">
+                    Objectif pour cette période
+                  </p>
+                  <div className="flex gap-3">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <label htmlFor="ca_cible" className="text-sm text-muted-foreground">
+                        CA cible (€)
+                      </label>
+                      <input
+                        id="ca_cible"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={caCible}
+                        onChange={(e) => setCaCible(e.target.value)}
+                        className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <label
+                        htmlFor="panier_cible"
+                        className="text-sm text-muted-foreground"
+                      >
+                        Panier moyen cible (€)
+                      </label>
+                      <input
+                        id="panier_cible"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        required
+                        value={panierCible}
+                        onChange={(e) => setPanierCible(e.target.value)}
+                        className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+                  >
+                    {saving
+                      ? "Enregistrement..."
+                      : objectif
+                        ? "Mettre à jour l'objectif"
+                        : "Définir l'objectif"}
+                  </button>
+                </form>
+              )}
+
+              <div className="flex flex-col gap-3">
+                <p className="text-sm font-medium text-foreground">
+                  Indicateurs optionnels
+                </p>
+                <label className="flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={panierArticleActif}
+                    disabled={savingReglages}
+                    onChange={(e) =>
+                      handleToggleIndicateurOptionnel(
+                        "indicateur_panier_article_actif",
+                        e.target.checked
+                      )
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Panier article
+                    <span className="block text-xs text-muted-foreground">
+                      Nombre moyen d&apos;articles par ticket.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={tauxTransformationActif}
+                    disabled={savingReglages}
+                    onChange={(e) =>
+                      handleToggleIndicateurOptionnel(
+                        "indicateur_taux_transformation_actif",
+                        e.target.checked
+                      )
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Taux de transformation
+                    <span className="block text-xs text-muted-foreground">
+                      Part des visiteurs qui achètent (tickets / visiteurs).
+                    </span>
+                  </span>
+                </label>
+                <label className="flex items-start gap-2 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    checked={tauxEncartementActif}
+                    disabled={savingReglages}
+                    onChange={(e) =>
+                      handleToggleIndicateurOptionnel(
+                        "indicateur_taux_encartement_actif",
+                        e.target.checked
+                      )
+                    }
+                    className="mt-0.5"
+                  />
+                  <span>
+                    Taux d&apos;encartement
+                    <span className="block text-xs text-muted-foreground">
+                      Part des tickets avec création d&apos;une carte de fidélité.
+                    </span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </details>
         </>
       )}
     </main>
