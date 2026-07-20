@@ -43,9 +43,6 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
   const [effectifOuverture, setEffectifOuverture] = useState("1");
   const [effectifFermeture, setEffectifFermeture] = useState("1");
   const [effectifJournee, setEffectifJournee] = useState("1");
-  const [panierArticleActif, setPanierArticleActif] = useState(false);
-  const [tauxTransformationActif, setTauxTransformationActif] = useState(false);
-  const [tauxEncartementActif, setTauxEncartementActif] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -58,7 +55,7 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
     const { data: boutique, error: boutiqueError } = await supabase
       .from("boutiques")
       .select(
-        "id, nom, horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee, indicateur_panier_article_actif, indicateur_taux_transformation_actif, indicateur_taux_encartement_actif"
+        "id, nom, horaires, effectif_min_ouverture, effectif_min_fermeture, effectif_min_journee"
       )
       .eq("id", boutiqueId)
       .single();
@@ -74,9 +71,6 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
     setEffectifOuverture(String(boutique.effectif_min_ouverture));
     setEffectifFermeture(String(boutique.effectif_min_fermeture));
     setEffectifJournee(String(boutique.effectif_min_journee));
-    setPanierArticleActif(boutique.indicateur_panier_article_actif);
-    setTauxTransformationActif(boutique.indicateur_taux_transformation_actif);
-    setTauxEncartementActif(boutique.indicateur_taux_encartement_actif);
     setLoading(false);
   }, [boutiqueId]);
 
@@ -125,9 +119,6 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
         effectif_min_ouverture: Number(effectifOuverture),
         effectif_min_fermeture: Number(effectifFermeture),
         effectif_min_journee: Number(effectifJournee),
-        indicateur_panier_article_actif: panierArticleActif,
-        indicateur_taux_transformation_actif: tauxTransformationActif,
-        indicateur_taux_encartement_actif: tauxEncartementActif,
       })
       .eq("id", boutiqueId);
 
@@ -261,54 +252,6 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
               className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
             />
           </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <h3 className="text-sm font-medium text-foreground">
-            Indicateurs optionnels
-          </h3>
-          <label className="flex items-start gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={panierArticleActif}
-              onChange={(e) => setPanierArticleActif(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>
-              Panier article
-              <span className="block text-xs text-muted-foreground">
-                Nombre moyen d&apos;articles par ticket.
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={tauxTransformationActif}
-              onChange={(e) => setTauxTransformationActif(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>
-              Taux de transformation
-              <span className="block text-xs text-muted-foreground">
-                Part des visiteurs qui achètent (tickets / visiteurs).
-              </span>
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-sm text-foreground">
-            <input
-              type="checkbox"
-              checked={tauxEncartementActif}
-              onChange={(e) => setTauxEncartementActif(e.target.checked)}
-              className="mt-0.5"
-            />
-            <span>
-              Taux d&apos;encartement
-              <span className="block text-xs text-muted-foreground">
-                Part des tickets avec création d&apos;une carte de fidélité.
-              </span>
-            </span>
-          </label>
         </div>
 
         <button
