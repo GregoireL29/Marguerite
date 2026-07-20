@@ -189,6 +189,7 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
   const [panierCible, setPanierCible] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingReglages, setSavingReglages] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -327,6 +328,34 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
     }
 
     await load();
+  }
+
+  async function handleToggleIndicateurOptionnel(
+    champ:
+      | "indicateur_panier_article_actif"
+      | "indicateur_taux_transformation_actif"
+      | "indicateur_taux_encartement_actif",
+    checked: boolean
+  ) {
+    if (!effectiveBoutiqueId) return;
+    setSavingReglages(true);
+    setError(null);
+
+    const { error: updateError } = await supabase
+      .from("boutiques")
+      .update({ [champ]: checked })
+      .eq("id", effectiveBoutiqueId);
+
+    setSavingReglages(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    if (champ === "indicateur_panier_article_actif") setPanierArticleActif(checked);
+    if (champ === "indicateur_taux_transformation_actif") setTauxTransformationActif(checked);
+    if (champ === "indicateur_taux_encartement_actif") setTauxEncartementActif(checked);
   }
 
   // Une ligne par jour de la période affichée, quelle que soit la vente
@@ -760,6 +789,72 @@ export function ManagerIndicateurs({ boutiqueId }: { boutiqueId?: string }) {
               </button>
             </form>
           )}
+
+          <div className="flex flex-col gap-3 rounded-md border border-border p-4">
+            <h2 className="text-sm font-medium text-foreground">
+              Indicateurs optionnels
+            </h2>
+            <label className="flex items-start gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={panierArticleActif}
+                disabled={savingReglages}
+                onChange={(e) =>
+                  handleToggleIndicateurOptionnel(
+                    "indicateur_panier_article_actif",
+                    e.target.checked
+                  )
+                }
+                className="mt-0.5"
+              />
+              <span>
+                Panier article
+                <span className="block text-xs text-muted-foreground">
+                  Nombre moyen d&apos;articles par ticket.
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={tauxTransformationActif}
+                disabled={savingReglages}
+                onChange={(e) =>
+                  handleToggleIndicateurOptionnel(
+                    "indicateur_taux_transformation_actif",
+                    e.target.checked
+                  )
+                }
+                className="mt-0.5"
+              />
+              <span>
+                Taux de transformation
+                <span className="block text-xs text-muted-foreground">
+                  Part des visiteurs qui achètent (tickets / visiteurs).
+                </span>
+              </span>
+            </label>
+            <label className="flex items-start gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={tauxEncartementActif}
+                disabled={savingReglages}
+                onChange={(e) =>
+                  handleToggleIndicateurOptionnel(
+                    "indicateur_taux_encartement_actif",
+                    e.target.checked
+                  )
+                }
+                className="mt-0.5"
+              />
+              <span>
+                Taux d&apos;encartement
+                <span className="block text-xs text-muted-foreground">
+                  Part des tickets avec création d&apos;une carte de fidélité.
+                </span>
+              </span>
+            </label>
+          </div>
         </>
       )}
     </main>
