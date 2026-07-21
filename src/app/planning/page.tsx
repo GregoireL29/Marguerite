@@ -826,6 +826,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-4">
           <button
+            data-tour="planning-generer"
             onClick={handleGenerate}
             disabled={generating || loading || mode === "form"}
             className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40 disabled:opacity-50"

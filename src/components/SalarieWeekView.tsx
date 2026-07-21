@@ -149,7 +149,7 @@ export function SalarieWeekView() {
         >
           &lsaquo;
         </button>
-        <h1 className="text-lg font-medium text-foreground">
+        <h1 data-tour="planning-semaine" className="text-lg font-medium text-foreground">
           Semaine du {formatDateLong(weekStart)}
         </h1>
         <button

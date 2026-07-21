@@ -52,7 +52,7 @@ export function BoutiqueSelector({ value, onChange }: BoutiqueSelectorProps) {
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div data-tour="boutique-selector" className="flex flex-col gap-1">
       <label htmlFor="boutique-selector" className="text-sm text-muted-foreground">
         Boutique
       </label>

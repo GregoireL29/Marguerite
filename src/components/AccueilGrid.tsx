@@ -16,19 +16,6 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
   const [personalizing, setPersonalizing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showWelcomeTip, setShowWelcomeTip] = useState(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!localStorage.getItem("marguerite-welcome-seen")) {
-      setShowWelcomeTip(true);
-    }
-  }, []);
-
-  function dismissWelcomeTip() {
-    localStorage.setItem("marguerite-welcome-seen", "1");
-    setShowWelcomeTip(false);
-  }
 
   const load = useCallback(async () => {
     if (!profile) return;
@@ -139,29 +126,13 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-medium text-foreground">Accueil</h1>
         <button
+          data-tour="accueil-personnaliser"
           onClick={() => setPersonalizing((p) => !p)}
           className="rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground hover:bg-border/40"
         >
           {personalizing ? "Terminer" : "Personnaliser"}
         </button>
       </div>
-
-      {showWelcomeTip && (
-        <div className="flex items-start justify-between gap-3 rounded-lg border border-accent/40 bg-accent/10 p-4">
-          <p className="text-sm text-foreground">
-            Bienvenue sur Marguerite ! Cet écran est personnalisable : cliquez
-            sur « Personnaliser » pour choisir les widgets à afficher et les
-            réorganiser selon vos besoins.
-          </p>
-          <button
-            onClick={dismissWelcomeTip}
-            aria-label="Fermer"
-            className="-m-2 flex h-11 w-11 shrink-0 items-center justify-center text-sm text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
-      )}
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 

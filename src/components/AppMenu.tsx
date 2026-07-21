@@ -191,6 +191,7 @@ export function AppMenu() {
             <div key={cat.key} className="relative shrink-0">
               <button
                 type="button"
+                data-tour={`menu-category-${cat.key}`}
                 onClick={(e) => {
                   if (!isOpen) {
                     // Le panneau (largeur fixe w-56, ancré à gauche du
@@ -231,6 +232,7 @@ export function AppMenu() {
                       <Link
                         key={tab.href}
                         href={tab.href}
+                        data-tour={`menu-tab-${tab.href}`}
                         className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${
                           isActiveTab
                             ? "bg-accent text-accent-foreground"
