@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase/client";
 import { AppMenu } from "@/components/AppMenu";
 import { OnboardingScreen } from "@/components/OnboardingScreen";
 import { EndOfDayNotifier } from "@/components/EndOfDayNotifier";
+import { GuidedTour } from "@/components/GuidedTour";
 
 type Status = "loading" | "logged-out" | "onboarding" | "ready";
 
@@ -137,6 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <UserProfileContext.Provider value={profile}>
       {status === "ready" && <AppMenu />}
       {status === "ready" && <EndOfDayNotifier />}
+      {status === "ready" && <GuidedTour />}
       {isBlockedRoute ? null : children}
     </UserProfileContext.Provider>
   );
