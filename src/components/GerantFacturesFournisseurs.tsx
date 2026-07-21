@@ -13,7 +13,11 @@ interface Fournisseur {
   siren: string | null;
   adresse: string | null;
   contact_commercial: string | null;
+  telephone: string | null;
+  email: string | null;
+  note: string | null;
   boutique_id: string;
+  boutiqueNom: string;
 }
 
 interface Facture {
@@ -55,7 +59,7 @@ function formatEuros(n: number): string {
 
 export function GerantFacturesFournisseurs() {
   const profile = useUserProfile();
-  const [onglet, setOnglet] = useState<"deposer" | "consulter">("deposer");
+  const [onglet, setOnglet] = useState<"deposer" | "consulter" | "annuaire">("deposer");
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [factures, setFactures] = useState<Facture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,6 +86,19 @@ export function GerantFacturesFournisseurs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Annuaire
+  const [annuaireSearch, setAnnuaireSearch] = useState("");
+  const [selectedGroupeKey, setSelectedGroupeKey] = useState<string | null>(null);
+  const [editNom, setEditNom] = useState("");
+  const [editSiren, setEditSiren] = useState("");
+  const [editAdresse, setEditAdresse] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [editTelephone, setEditTelephone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [savingFournisseur, setSavingFournisseur] = useState(false);
+  const [fournisseurSaved, setFournisseurSaved] = useState(false);
+
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
@@ -93,7 +110,9 @@ export function GerantFacturesFournisseurs() {
       await Promise.all([
         supabase
           .from("fournisseurs")
-          .select("id, nom, siren, adresse, contact_commercial, boutique_id")
+          .select(
+            "id, nom, siren, adresse, contact_commercial, telephone, email, note, boutique_id, boutiques(nom)"
+          )
           .order("nom"),
         supabase
           .from("factures_fournisseurs")
@@ -114,7 +133,36 @@ export function GerantFacturesFournisseurs() {
       return;
     }
 
-    setFournisseurs(fournisseursData ?? []);
+    const fournisseurRows = (fournisseursData ?? []) as unknown as {
+      id: string;
+      nom: string;
+      siren: string | null;
+      adresse: string | null;
+      contact_commercial: string | null;
+      telephone: string | null;
+      email: string | null;
+      note: string | null;
+      boutique_id: string;
+      boutiques: { nom: string } | { nom: string }[] | null;
+    }[];
+
+    setFournisseurs(
+      fournisseurRows.map((r) => {
+        const boutique = Array.isArray(r.boutiques) ? r.boutiques[0] : r.boutiques;
+        return {
+          id: r.id,
+          nom: r.nom,
+          siren: r.siren,
+          adresse: r.adresse,
+          contact_commercial: r.contact_commercial,
+          telephone: r.telephone,
+          email: r.email,
+          note: r.note,
+          boutique_id: r.boutique_id,
+          boutiqueNom: boutique?.nom ?? "?",
+        };
+      })
+    );
 
     const rows = (facturesData ?? []) as unknown as {
       id: string;
@@ -328,6 +376,115 @@ export function GerantFacturesFournisseurs() {
     return recentes.reduce((s, f) => s + montantTtc(f), 0);
   }, [factures, pinnedGroup]);
 
+  // Annuaire : un groupe par nom normalisé (même logique que pinnedGroup
+  // ci-dessus, mais calculé pour tous les fournisseurs d'un coup plutôt que
+  // pour la seule recherche exacte de l'onglet Consulter). La fiche "de
+  // référence" affichée est la première du groupe qui a au moins une
+  // coordonnée renseignée, sinon la première du groupe.
+  const fournisseurGroupes = useMemo(() => {
+    const parKey = new Map<string, Fournisseur[]>();
+    for (const f of fournisseurs) {
+      const key = f.nom.trim().toLowerCase();
+      const liste = parKey.get(key) ?? [];
+      liste.push(f);
+      parKey.set(key, liste);
+    }
+    return Array.from(parKey.entries()).map(([key, matches]) => {
+      const reference =
+        matches.find((f) => f.siren || f.adresse || f.contact_commercial || f.telephone || f.email || f.note) ??
+        matches[0];
+      const boutiquesNoms = Array.from(new Set(matches.map((f) => f.boutiqueNom)));
+      return {
+        key,
+        nom: reference.nom,
+        siren: reference.siren,
+        adresse: reference.adresse,
+        contact: reference.contact_commercial,
+        telephone: reference.telephone,
+        email: reference.email,
+        note: reference.note,
+        fournisseurIds: matches.map((f) => f.id),
+        boutiquesNoms,
+      };
+    });
+  }, [fournisseurs]);
+
+  const filteredAnnuaireGroupes = useMemo(() => {
+    const term = annuaireSearch.trim().toLowerCase();
+    if (!term) return fournisseurGroupes;
+    return fournisseurGroupes.filter((g) => g.nom.toLowerCase().includes(term));
+  }, [fournisseurGroupes, annuaireSearch]);
+
+  const selectedGroupe = useMemo(
+    () => fournisseurGroupes.find((g) => g.key === selectedGroupeKey) ?? null,
+    [fournisseurGroupes, selectedGroupeKey]
+  );
+
+  const facturesDuGroupeSelectionne = useMemo(() => {
+    if (!selectedGroupe) return [];
+    return factures.filter((f) => selectedGroupe.fournisseurIds.includes(f.fournisseur_id));
+  }, [factures, selectedGroupe]);
+
+  const totalFicheGroupe12Mois = useMemo(() => {
+    if (!selectedGroupe) return null;
+    const seuil = toISODate(new Date(Date.now() - 365 * 86400000));
+    const recentes = facturesDuGroupeSelectionne.filter((f) => f.date_facture >= seuil);
+    if (recentes.length === 0) return null;
+    return recentes.reduce((s, f) => s + montantTtc(f), 0);
+  }, [facturesDuGroupeSelectionne, selectedGroupe]);
+
+  function openFiche(g: (typeof fournisseurGroupes)[number]) {
+    setSelectedGroupeKey(g.key);
+    setEditNom(g.nom);
+    setEditSiren(g.siren ?? "");
+    setEditAdresse(g.adresse ?? "");
+    setEditContact(g.contact ?? "");
+    setEditTelephone(g.telephone ?? "");
+    setEditEmail(g.email ?? "");
+    setEditNote(g.note ?? "");
+    setFournisseurSaved(false);
+  }
+
+  // Édite toutes les fiches du groupe (une par boutique livrée) plutôt
+  // qu'une seule : sans quoi corriger un numéro de téléphone depuis la vue
+  // gérant ne mettrait à jour qu'une boutique sur les N qui commandent chez
+  // ce fournisseur, et les autres resteraient silencieusement obsolètes.
+  async function handleUpdateFournisseur(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedGroupe || !editNom.trim()) return;
+
+    setSavingFournisseur(true);
+    setError(null);
+    setFournisseurSaved(false);
+
+    const { error: updateError } = await supabase
+      .from("fournisseurs")
+      .update({
+        nom: editNom.trim(),
+        siren: editSiren.trim() || null,
+        adresse: editAdresse.trim() || null,
+        contact_commercial: editContact.trim() || null,
+        telephone: editTelephone.trim() || null,
+        email: editEmail.trim() || null,
+        note: editNote.trim() || null,
+      })
+      .in("id", selectedGroupe.fournisseurIds);
+
+    setSavingFournisseur(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    // Le groupe est identifié par nom normalisé : si le nom vient de
+    // changer, il faut suivre la fiche vers sa nouvelle clé plutôt que de
+    // se retrouver silencieusement renvoyé à la liste après enregistrement.
+    setSelectedGroupeKey(editNom.trim().toLowerCase());
+    setFournisseurSaved(true);
+    await load();
+  }
+
   function exporterCsv() {
     const header = ["Date", "Boutique", "Fournisseur", "Montant HT", "TVA (%)", "Montant TTC", "Catégorie"];
     const rows = filteredFactures.map((f) => [
@@ -373,6 +530,17 @@ export function GerantFacturesFournisseurs() {
           }`}
         >
           Consulter
+        </button>
+        <button
+          onClick={() => {
+            setOnglet("annuaire");
+            setSelectedGroupeKey(null);
+          }}
+          className={`rounded-md px-3 py-2 text-sm font-medium ${
+            onglet === "annuaire" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
+          }`}
+        >
+          Annuaire
         </button>
       </div>
 
@@ -563,7 +731,7 @@ export function GerantFacturesFournisseurs() {
             {saving ? "Envoi..." : "Déposer la facture"}
           </button>
         </form>
-      ) : (
+      ) : onglet === "consulter" ? (
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div>
@@ -658,6 +826,214 @@ export function GerantFacturesFournisseurs() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      ) : selectedGroupe ? (
+        <div className="flex flex-col gap-6">
+          <button
+            onClick={() => setSelectedGroupeKey(null)}
+            className="self-start text-sm text-muted-foreground hover:underline"
+          >
+            &larr; Annuaire
+          </button>
+
+          <form
+            onSubmit={handleUpdateFournisseur}
+            className="flex flex-col gap-4 rounded-lg border border-border p-4"
+          >
+            <p className="text-sm font-medium text-foreground">Coordonnées</p>
+            <p className="text-xs text-muted-foreground">
+              Boutiques livrées :{" "}
+              {selectedGroupe.boutiquesNoms.length > 0 ? selectedGroupe.boutiquesNoms.join(", ") : "aucune"}
+              {" — la modification s'applique à toutes les fiches de ce fournisseur."}
+            </p>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-nom" className="text-sm text-muted-foreground">
+                Nom
+              </label>
+              <input
+                id="edit-nom"
+                required
+                value={editNom}
+                onChange={(e) => setEditNom(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-siren" className="text-sm text-muted-foreground">
+                  SIREN
+                </label>
+                <input
+                  id="edit-siren"
+                  value={editSiren}
+                  onChange={(e) => setEditSiren(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-contact" className="text-sm text-muted-foreground">
+                  Contact commercial
+                </label>
+                <input
+                  id="edit-contact"
+                  value={editContact}
+                  onChange={(e) => setEditContact(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-adresse" className="text-sm text-muted-foreground">
+                Adresse
+              </label>
+              <input
+                id="edit-adresse"
+                value={editAdresse}
+                onChange={(e) => setEditAdresse(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-telephone" className="text-sm text-muted-foreground">
+                  Téléphone
+                </label>
+                <input
+                  id="edit-telephone"
+                  type="tel"
+                  value={editTelephone}
+                  onChange={(e) => setEditTelephone(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-email" className="text-sm text-muted-foreground">
+                  Email
+                </label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-note" className="text-sm text-muted-foreground">
+                Note (conditions de paiement, remarques...)
+              </label>
+              <textarea
+                id="edit-note"
+                rows={3}
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={savingFournisseur}
+                className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+              >
+                {savingFournisseur ? "Enregistrement..." : "Enregistrer"}
+              </button>
+              {fournisseurSaved && (
+                <p className="text-sm text-green-600 dark:text-green-400">Enregistré.</p>
+              )}
+            </div>
+          </form>
+
+          <div className="rounded-lg border border-border p-4">
+            <p className="text-sm text-muted-foreground">Total facturé sur 12 mois (toutes boutiques)</p>
+            <p className="text-lg font-medium text-foreground">
+              {totalFicheGroupe12Mois !== null
+                ? `${formatEuros(totalFicheGroupe12Mois)} € TTC`
+                : "Aucune facture sur les 12 derniers mois."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium text-foreground">Historique des factures</p>
+            {facturesDuGroupeSelectionne.length === 0 ? (
+              <p className="text-sm text-faint-foreground">Aucune facture pour l&apos;instant.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-border">
+                {facturesDuGroupeSelectionne.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {formatEuros(f.montant_ht)} € HT
+                        <span className="ml-2 rounded-full bg-border/30 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {f.boutiqueNom}
+                        </span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {f.categorie} · {formatDate(f.date_facture)} · TVA {f.taux_tva}% ·{" "}
+                        {formatEuros(montantTtc(f))} € TTC
+                      </p>
+                      <p className="text-sm text-muted-foreground">{f.descriptif}</p>
+                    </div>
+                    <button
+                      onClick={() => handleVoirFacture(f.fichier_url, f.id)}
+                      disabled={downloadingId === f.id}
+                      className="shrink-0 text-sm text-muted-foreground hover:underline disabled:opacity-50"
+                    >
+                      Voir la facture
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="recherche-annuaire" className="text-sm text-muted-foreground">
+              Rechercher un fournisseur
+            </label>
+            <input
+              id="recherche-annuaire"
+              value={annuaireSearch}
+              onChange={(e) => setAnnuaireSearch(e.target.value)}
+              placeholder="Nom du fournisseur..."
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Chargement...</p>
+          ) : filteredAnnuaireGroupes.length === 0 ? (
+            <p className="text-sm text-faint-foreground">Aucun fournisseur pour l&apos;instant.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filteredAnnuaireGroupes.map((g) => (
+                <button
+                  key={g.key}
+                  onClick={() => openFiche(g)}
+                  className="flex flex-col gap-1 rounded-lg border border-border p-4 text-left hover:border-accent"
+                >
+                  <p className="text-sm font-medium text-foreground">{g.nom}</p>
+                  {g.contact && <p className="text-xs text-muted-foreground">{g.contact}</p>}
+                  <p className="text-xs text-muted-foreground">{g.telephone ?? "Téléphone non renseigné"}</p>
+                  <p className="text-xs text-muted-foreground">{g.email ?? "Email non renseigné"}</p>
+                  {g.boutiquesNoms.length > 1 && (
+                    <p className="mt-1 text-[11px] text-faint-foreground">
+                      {g.boutiquesNoms.length} boutiques : {g.boutiquesNoms.join(", ")}
+                    </p>
+                  )}
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}
