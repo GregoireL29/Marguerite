@@ -1008,3 +1008,34 @@ $$;
 
 revoke all on function claim_invite(uuid) from public;
 grant execute on function claim_invite(uuid) to authenticated;
+
+-- =====================================================================
+-- Intégration Google Business Profile (préparation, non fonctionnelle)
+-- =====================================================================
+-- Table créée en amont de l'obtention de l'accès à l'API Google Business
+-- Profile (demande soumise, délai d'approbation Google jusqu'à 14 jours,
+-- non garanti — voir docs/google-business-profile-demarche.md). Rien ne
+-- lit ni n'écrit cette table pour l'instant : aucun flux OAuth n'existe
+-- côté application tant que l'accès n'est pas accordé.
+--
+-- RLS activé SANS aucune policy, intentionnellement : ça bloque tout
+-- accès via les rôles anon/authenticated (donc via le client, y compris
+-- pour un gérant), puisque des jetons OAuth tiers n'ont rien à faire
+-- d'exposés à l'app cliente. Seul le rôle service_role (utilisé
+-- uniquement dans un traitement serveur, à construire une fois l'accès
+-- obtenu) pourra lire/écrire cette table.
+create table connexions_google_business (
+  id uuid primary key default uuid_generate_v4(),
+  boutique_id uuid not null references boutiques(id) on delete cascade,
+  google_location_id text,
+  access_token text,
+  refresh_token text,
+  token_expires_at timestamptz,
+  connecte_par uuid references utilisateurs(id) on delete set null,
+  connecte_le timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create unique index idx_connexions_google_business_boutique on connexions_google_business(boutique_id);
+
+alter table connexions_google_business enable row level security;
