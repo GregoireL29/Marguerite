@@ -12,6 +12,9 @@ interface Fournisseur {
   siren: string | null;
   adresse: string | null;
   contact_commercial: string | null;
+  telephone: string | null;
+  email: string | null;
+  note: string | null;
 }
 
 interface Facture {
@@ -52,7 +55,7 @@ function formatEuros(n: number): string {
 
 export function ManagerFacturesFournisseurs() {
   const profile = useUserProfile();
-  const [onglet, setOnglet] = useState<"deposer" | "consulter">("deposer");
+  const [onglet, setOnglet] = useState<"deposer" | "consulter" | "annuaire">("deposer");
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [factures, setFactures] = useState<Facture[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,6 +81,19 @@ export function ManagerFacturesFournisseurs() {
   const [searchTerm, setSearchTerm] = useState("");
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
+  // Annuaire
+  const [annuaireSearch, setAnnuaireSearch] = useState("");
+  const [selectedFournisseurId, setSelectedFournisseurId] = useState<string | null>(null);
+  const [editNom, setEditNom] = useState("");
+  const [editSiren, setEditSiren] = useState("");
+  const [editAdresse, setEditAdresse] = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [editTelephone, setEditTelephone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editNote, setEditNote] = useState("");
+  const [savingFournisseur, setSavingFournisseur] = useState(false);
+  const [fournisseurSaved, setFournisseurSaved] = useState(false);
+
   const load = useCallback(async () => {
     if (!profile) return;
     setLoading(true);
@@ -87,7 +103,7 @@ export function ManagerFacturesFournisseurs() {
       await Promise.all([
         supabase
           .from("fournisseurs")
-          .select("id, nom, siren, adresse, contact_commercial")
+          .select("id, nom, siren, adresse, contact_commercial, telephone, email, note")
           .eq("boutique_id", profile.boutique_id)
           .order("nom"),
         supabase
@@ -275,6 +291,74 @@ export function ManagerFacturesFournisseurs() {
     return recentes.reduce((s, f) => s + montantTtc(f), 0);
   }, [factures, pinnedFournisseur]);
 
+  const filteredAnnuaire = useMemo(() => {
+    const term = annuaireSearch.trim().toLowerCase();
+    if (!term) return fournisseurs;
+    return fournisseurs.filter((f) => f.nom.toLowerCase().includes(term));
+  }, [fournisseurs, annuaireSearch]);
+
+  const selectedFournisseur = useMemo(
+    () => fournisseurs.find((f) => f.id === selectedFournisseurId) ?? null,
+    [fournisseurs, selectedFournisseurId]
+  );
+
+  const facturesDuFournisseurSelectionne = useMemo(() => {
+    if (!selectedFournisseurId) return [];
+    return factures.filter((f) => f.fournisseur_id === selectedFournisseurId);
+  }, [factures, selectedFournisseurId]);
+
+  const totalFicheFournisseur12Mois = useMemo(() => {
+    if (!selectedFournisseurId) return null;
+    const seuil = toISODate(new Date(Date.now() - 365 * 86400000));
+    const recentes = facturesDuFournisseurSelectionne.filter((f) => f.date_facture >= seuil);
+    if (recentes.length === 0) return null;
+    return recentes.reduce((s, f) => s + montantTtc(f), 0);
+  }, [facturesDuFournisseurSelectionne, selectedFournisseurId]);
+
+  function openFiche(f: Fournisseur) {
+    setSelectedFournisseurId(f.id);
+    setEditNom(f.nom);
+    setEditSiren(f.siren ?? "");
+    setEditAdresse(f.adresse ?? "");
+    setEditContact(f.contact_commercial ?? "");
+    setEditTelephone(f.telephone ?? "");
+    setEditEmail(f.email ?? "");
+    setEditNote(f.note ?? "");
+    setFournisseurSaved(false);
+  }
+
+  async function handleUpdateFournisseur(e: React.FormEvent) {
+    e.preventDefault();
+    if (!selectedFournisseurId || !editNom.trim()) return;
+
+    setSavingFournisseur(true);
+    setError(null);
+    setFournisseurSaved(false);
+
+    const { error: updateError } = await supabase
+      .from("fournisseurs")
+      .update({
+        nom: editNom.trim(),
+        siren: editSiren.trim() || null,
+        adresse: editAdresse.trim() || null,
+        contact_commercial: editContact.trim() || null,
+        telephone: editTelephone.trim() || null,
+        email: editEmail.trim() || null,
+        note: editNote.trim() || null,
+      })
+      .eq("id", selectedFournisseurId);
+
+    setSavingFournisseur(false);
+
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
+
+    setFournisseurSaved(true);
+    await load();
+  }
+
   function exporterCsv() {
     const header = ["Date", "Fournisseur", "Montant HT", "TVA (%)", "Montant TTC", "Catégorie"];
     const rows = filteredFactures.map((f) => [
@@ -319,6 +403,17 @@ export function ManagerFacturesFournisseurs() {
           }`}
         >
           Consulter
+        </button>
+        <button
+          onClick={() => {
+            setOnglet("annuaire");
+            setSelectedFournisseurId(null);
+          }}
+          className={`rounded-md px-3 py-2 text-sm font-medium ${
+            onglet === "annuaire" ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-border/40"
+          }`}
+        >
+          Annuaire
         </button>
       </div>
 
@@ -500,7 +595,7 @@ export function ManagerFacturesFournisseurs() {
             {saving ? "Envoi..." : "Déposer la facture"}
           </button>
         </form>
-      ) : (
+      ) : onglet === "consulter" ? (
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between rounded-lg border border-border p-4">
             <div>
@@ -586,6 +681,207 @@ export function ManagerFacturesFournisseurs() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+      ) : selectedFournisseur ? (
+        <div className="flex flex-col gap-6">
+          <button
+            onClick={() => setSelectedFournisseurId(null)}
+            className="self-start text-sm text-muted-foreground hover:underline"
+          >
+            &larr; Annuaire
+          </button>
+
+          <form
+            onSubmit={handleUpdateFournisseur}
+            className="flex flex-col gap-4 rounded-lg border border-border p-4"
+          >
+            <p className="text-sm font-medium text-foreground">Coordonnées</p>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-nom" className="text-sm text-muted-foreground">
+                Nom
+              </label>
+              <input
+                id="edit-nom"
+                required
+                value={editNom}
+                onChange={(e) => setEditNom(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-siren" className="text-sm text-muted-foreground">
+                  SIREN
+                </label>
+                <input
+                  id="edit-siren"
+                  value={editSiren}
+                  onChange={(e) => setEditSiren(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-contact" className="text-sm text-muted-foreground">
+                  Contact commercial
+                </label>
+                <input
+                  id="edit-contact"
+                  value={editContact}
+                  onChange={(e) => setEditContact(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-adresse" className="text-sm text-muted-foreground">
+                Adresse
+              </label>
+              <input
+                id="edit-adresse"
+                value={editAdresse}
+                onChange={(e) => setEditAdresse(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-telephone" className="text-sm text-muted-foreground">
+                  Téléphone
+                </label>
+                <input
+                  id="edit-telephone"
+                  type="tel"
+                  value={editTelephone}
+                  onChange={(e) => setEditTelephone(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col gap-1">
+                <label htmlFor="edit-email" className="text-sm text-muted-foreground">
+                  Email
+                </label>
+                <input
+                  id="edit-email"
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="edit-note" className="text-sm text-muted-foreground">
+                Note (conditions de paiement, remarques...)
+              </label>
+              <textarea
+                id="edit-note"
+                rows={3}
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={savingFournisseur}
+                className="self-start rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground disabled:opacity-50"
+              >
+                {savingFournisseur ? "Enregistrement..." : "Enregistrer"}
+              </button>
+              {fournisseurSaved && (
+                <p className="text-sm text-green-600 dark:text-green-400">Enregistré.</p>
+              )}
+            </div>
+          </form>
+
+          <div className="rounded-lg border border-border p-4">
+            <p className="text-sm text-muted-foreground">Total facturé sur 12 mois</p>
+            <p className="text-lg font-medium text-foreground">
+              {totalFicheFournisseur12Mois !== null
+                ? `${formatEuros(totalFicheFournisseur12Mois)} € TTC`
+                : "Aucune facture sur les 12 derniers mois."}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium text-foreground">Historique des factures</p>
+            {facturesDuFournisseurSelectionne.length === 0 ? (
+              <p className="text-sm text-faint-foreground">Aucune facture pour l&apos;instant.</p>
+            ) : (
+              <ul className="flex flex-col divide-y divide-border">
+                {facturesDuFournisseurSelectionne.map((f) => (
+                  <li key={f.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">
+                        {formatEuros(f.montant_ht)} € HT
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {f.categorie} · {formatDate(f.date_facture)} · TVA {f.taux_tva}% ·{" "}
+                        {formatEuros(montantTtc(f))} € TTC
+                      </p>
+                      <p className="text-sm text-muted-foreground">{f.descriptif}</p>
+                    </div>
+                    <button
+                      onClick={() => handleVoirFacture(f.fichier_url, f.id)}
+                      disabled={downloadingId === f.id}
+                      className="shrink-0 text-sm text-muted-foreground hover:underline disabled:opacity-50"
+                    >
+                      Voir la facture
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <label htmlFor="recherche-annuaire" className="text-sm text-muted-foreground">
+              Rechercher un fournisseur
+            </label>
+            <input
+              id="recherche-annuaire"
+              value={annuaireSearch}
+              onChange={(e) => setAnnuaireSearch(e.target.value)}
+              placeholder="Nom du fournisseur..."
+              className="rounded-md border border-border px-3 py-2 text-sm outline-none focus:border-accent"
+            />
+          </div>
+
+          {loading ? (
+            <p className="text-sm text-muted-foreground">Chargement...</p>
+          ) : filteredAnnuaire.length === 0 ? (
+            <p className="text-sm text-faint-foreground">Aucun fournisseur pour l&apos;instant.</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {filteredAnnuaire.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => openFiche(f)}
+                  className="flex flex-col gap-1 rounded-lg border border-border p-4 text-left hover:border-accent"
+                >
+                  <p className="text-sm font-medium text-foreground">{f.nom}</p>
+                  {f.contact_commercial && (
+                    <p className="text-xs text-muted-foreground">{f.contact_commercial}</p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {f.telephone ?? "Téléphone non renseigné"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {f.email ?? "Email non renseigné"}
+                  </p>
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}

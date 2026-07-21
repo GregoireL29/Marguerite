@@ -221,6 +221,9 @@ create table fournisseurs (
   siren text,
   adresse text,
   contact_commercial text,
+  telephone text,
+  email text,
+  note text,
   created_at timestamptz not null default now()
 );
 
