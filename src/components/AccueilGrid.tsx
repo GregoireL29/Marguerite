@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import type { WidgetDef } from "@/components/widgets/registry";
+import { PageHeading } from "@/components/ds";
 
 interface AccueilGridProps {
   availableWidgets: WidgetDef[];
@@ -102,8 +103,8 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
 
   if (!profile || pinnedKeys === null) {
     return (
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-        <h1 className="text-xl font-medium text-foreground">Accueil</h1>
+      <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
+        <PageHeading>Accueil</PageHeading>
         <p className="text-sm text-muted-foreground">Chargement...</p>
       </main>
     );
@@ -122,9 +123,9 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
   ];
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-medium text-foreground">Accueil</h1>
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
+      <div className="flex items-center justify-between gap-4">
+        <PageHeading>Accueil</PageHeading>
         <button
           data-tour="accueil-personnaliser"
           onClick={() => setPersonalizing((p) => !p)}
@@ -143,7 +144,7 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
             const idx = pinnedKeys.indexOf(w.key);
 
             return (
-              <li key={w.key} className="flex items-center justify-between gap-3 py-3">
+              <li key={w.key} className="flex items-center justify-between gap-3 py-4">
                 <span className="text-sm text-foreground">{w.label}</span>
                 <div className="flex shrink-0 items-center gap-2">
                   {isPinned && (
@@ -185,9 +186,9 @@ export function AccueilGrid({ availableWidgets, defaultPins }: AccueilGridProps)
           Aucun widget épinglé. Clique sur « Personnaliser » pour en ajouter.
         </p>
       ) : (
-        <div className="columns-1 gap-4 sm:columns-2">
+        <div className="flex flex-col divide-y divide-border">
           {pinnedWidgets.map((w) => (
-            <div key={w.key} className="mb-4 break-inside-avoid">
+            <div key={w.key} className="py-8 first:pt-0">
               <w.component />
             </div>
           ))}

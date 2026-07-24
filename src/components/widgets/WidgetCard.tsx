@@ -9,9 +9,13 @@ interface WidgetCardProps {
   children: ReactNode;
 }
 
+// Plus de cadre/fond : chaque widget est une section parmi d'autres dans un
+// flux vertical, séparée par un simple trait fin (géré par le parent qui
+// empile les widgets, pas ici) plutôt qu'une carte. Seul le lien "Voir",
+// réellement interactif, garde un traitement typographique dédié.
 export function WidgetCard({ title, href, children }: WidgetCardProps) {
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4 shadow-sm dark:shadow-[0_4px_10px_rgba(0,0,0,0.45)]">
+    <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-foreground">{title}</p>
         {href && (

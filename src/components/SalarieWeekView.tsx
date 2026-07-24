@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
+import { PageHeading, Section } from "@/components/ds";
 
 type JourKey = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
 
@@ -140,66 +141,68 @@ export function SalarieWeekView() {
   if (!profile) return null;
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6 px-4 py-8">
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => setWeekStart((w) => addDays(w, -7))}
-          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
-          aria-label="Semaine précédente"
-        >
-          &lsaquo;
-        </button>
-        <h1 data-tour="planning-semaine" className="text-lg font-medium text-foreground">
-          Semaine du {formatDateLong(weekStart)}
-        </h1>
-        <button
-          onClick={() => setWeekStart((w) => addDays(w, 7))}
-          className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
-          aria-label="Semaine suivante"
-        >
-          &rsaquo;
-        </button>
-      </div>
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setWeekStart((w) => addDays(w, -7))}
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
+            aria-label="Semaine précédente"
+          >
+            &lsaquo;
+          </button>
+          <PageHeading data-tour="planning-semaine">
+            Semaine du {formatDateLong(weekStart)}
+          </PageHeading>
+          <button
+            onClick={() => setWeekStart((w) => addDays(w, 7))}
+            className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
+            aria-label="Semaine suivante"
+          >
+            &rsaquo;
+          </button>
+        </div>
 
-      <p className="text-sm text-muted-foreground">
-        {profile.nom} — {boutiqueNom}
-      </p>
+        <p className="text-sm text-muted-foreground">
+          {profile.nom} — {boutiqueNom}
+        </p>
 
-      {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
-        <button
-          onClick={() => setViewMode("semaine")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            viewMode === "semaine"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
-          }`}
-        >
-          Semaine
-        </button>
-        <button
-          onClick={() => setViewMode("jour")}
-          className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-            viewMode === "jour"
-              ? "bg-accent text-accent-foreground"
-              : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
-          }`}
-        >
-          Jour
-        </button>
+        <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
+          <button
+            onClick={() => setViewMode("semaine")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === "semaine"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Semaine
+          </button>
+          <button
+            onClick={() => setViewMode("jour")}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === "jour"
+                ? "bg-accent text-accent-foreground"
+                : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
+            }`}
+          >
+            Jour
+          </button>
+        </div>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Chargement...</p>
       ) : viewMode === "jour" ? (
-        <div className="flex flex-col gap-4">
-          <div className="inline-flex w-fit gap-1 rounded-lg border border-border bg-card p-1">
+        <Section className="flex flex-col gap-6">
+          <div className="flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
             {JOURS.map(({ key, label, offset }) => (
               <button
                 key={key}
                 onClick={() => setSelectedDayOffset(offset)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   selectedDayOffset === offset
                     ? "bg-accent text-accent-foreground"
                     : "text-muted-foreground hover:bg-border/40 hover:text-foreground"
@@ -217,9 +220,9 @@ export function SalarieWeekView() {
             const dayCreneaux = creneaux.filter((c) => c.jour === dateISO);
 
             return (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 <div>
-                  <p className="text-sm font-medium text-foreground">{label}</p>
+                  <p className="text-base font-semibold text-foreground">{label}</p>
                   <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
                 </div>
                 {dayCreneaux.length === 0 ? (
@@ -240,44 +243,43 @@ export function SalarieWeekView() {
               </div>
             );
           })()}
-        </div>
+        </Section>
       ) : (
-        <div className="flex flex-col divide-y divide-border">
-          {JOURS.map(({ key, label, offset }) => {
-            const date = addDays(weekStart, offset);
-            const dateISO = toISODate(date);
-            const dayCreneaux = creneaux.filter((c) => c.jour === dateISO);
+        <Section>
+          <div className="flex flex-col divide-y divide-border">
+            {JOURS.map(({ key, label, offset }) => {
+              const date = addDays(weekStart, offset);
+              const dateISO = toISODate(date);
+              const dayCreneaux = creneaux.filter((c) => c.jour === dateISO);
 
-            return (
-              <div
-                key={key}
-                className="flex items-center justify-between py-3"
-              >
-                <div>
-                  <p className="text-sm font-medium text-foreground">{label}</p>
-                  <p className="text-xs text-faint-foreground">
-                    {formatDateShort(date)}
-                  </p>
+              return (
+                <div key={key} className="flex items-center justify-between py-4 first:pt-0">
+                  <div>
+                    <p className="text-base font-semibold text-foreground">{label}</p>
+                    <p className="text-xs text-faint-foreground">
+                      {formatDateShort(date)}
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    {dayCreneaux.length === 0 ? (
+                      <span className="text-sm text-faint-foreground">Repos</span>
+                    ) : (
+                      dayCreneaux.map((c) => (
+                        <span
+                          key={c.id}
+                          className="rounded-md px-2 py-1 text-sm font-medium text-white"
+                          style={{ backgroundColor: profile.couleur }}
+                        >
+                          {c.heure_debut.slice(0, 5)}–{c.heure_fin.slice(0, 5)}
+                        </span>
+                      ))
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  {dayCreneaux.length === 0 ? (
-                    <span className="text-sm text-faint-foreground">Repos</span>
-                  ) : (
-                    dayCreneaux.map((c) => (
-                      <span
-                        key={c.id}
-                        className="rounded-md px-2 py-1 text-sm font-medium text-white"
-                        style={{ backgroundColor: profile.couleur }}
-                      >
-                        {c.heure_debut.slice(0, 5)}–{c.heure_fin.slice(0, 5)}
-                      </span>
-                    ))
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </Section>
       )}
     </main>
   );
