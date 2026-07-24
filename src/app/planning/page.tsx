@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase/client";
 import { useUserProfile } from "@/components/AppShell";
 import { SalarieWeekView } from "@/components/SalarieWeekView";
 import { BoutiqueSelector } from "@/components/BoutiqueSelector";
+import { PageHeading, Section } from "@/components/ds";
 
 type JourKey = "lun" | "mar" | "mer" | "jeu" | "ven" | "sam" | "dim";
 
@@ -722,7 +723,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
     return (
       <div className="flex flex-col gap-3">
         <div>
-          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="text-base font-semibold text-foreground">{label}</p>
           <p className="text-xs text-faint-foreground">{formatDateShort(date)}</p>
         </div>
 
@@ -738,7 +739,9 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
                   b.end
                 )} : ${b.actual}/${b.required}`}
                 className={`flex-1 ${
-                  b.actual < b.required ? "bg-red-400" : "bg-green-200"
+                  b.actual < b.required
+                    ? "bg-red-400 dark:bg-red-500"
+                    : "bg-green-200 dark:bg-green-700"
                 }`}
               />
             ))}
@@ -786,14 +789,14 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
 
   if (!effectiveBoutiqueId) {
     return (
-      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
+      <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-10">
         <p className="text-sm text-faint-foreground">Aucune boutique associée à votre compte.</p>
       </main>
     );
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8">
+    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-10 px-4 py-10 sm:px-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           <button
@@ -803,9 +806,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
           >
             &lsaquo;
           </button>
-          <h1 className="text-lg font-medium text-foreground">
-            Semaine du {formatDateLong(weekStart)}
-          </h1>
+          <PageHeading>Semaine du {formatDateLong(weekStart)}</PageHeading>
           <button
             onClick={() => setWeekStart((w) => addDays(w, 7))}
             className="rounded-md border border-border px-2 py-1 text-sm text-muted-foreground hover:bg-border/40"
@@ -873,7 +874,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
         (loading ? (
           <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
-          <div className="flex flex-col gap-4">
+          <Section className="flex flex-col gap-6">
             <div className="flex w-full max-w-full gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
               {JOURS.map(({ key, label, offset }) => (
                 <button
@@ -891,18 +892,18 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
             </div>
 
             {renderJourCard(JOURS[selectedDayOffset])}
-          </div>
+          </Section>
         ))}
 
       {mode === "grid" && viewMode === "semaine" &&
         (loading ? (
           <p className="text-sm text-muted-foreground">Chargement...</p>
         ) : (
-          <>
+          <Section>
             {/* Grille horizontale 7 colonnes, réservée à l'écran large : sur
                 mobile elle reste illisible même compressée, remplacée
                 ci-dessous par un agenda vertical qui réutilise renderJourCard. */}
-            <div className="hidden gap-3 overflow-x-auto pb-2 md:flex">
+            <div className="hidden gap-6 overflow-x-auto pb-2 md:flex">
             {JOURS.map(({ key, label, offset }) => {
               const date = addDays(weekStart, offset);
               const dateISO = toISODate(date);
@@ -918,12 +919,12 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
               const hasGap = buckets.some((b) => b.actual < b.required);
 
               return (
-                <div key={key} className="flex w-40 shrink-0 flex-col gap-2">
+                <div key={key} className="flex w-40 shrink-0 flex-col gap-3">
                   <div>
-                    <p className="text-xs font-medium text-foreground">
+                    <p className="text-sm font-semibold text-foreground">
                       {label}
                     </p>
-                    <p className="text-[11px] text-faint-foreground">
+                    <p className="text-xs text-faint-foreground">
                       {formatDateShort(date)}
                     </p>
                   </div>
@@ -940,7 +941,9 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
                             b.end
                           )} : ${b.actual}/${b.required}`}
                           className={`flex-1 ${
-                            b.actual < b.required ? "bg-red-400" : "bg-green-200"
+                            b.actual < b.required
+                              ? "bg-red-400 dark:bg-red-500"
+                              : "bg-green-200 dark:bg-green-700"
                           }`}
                         />
                       ))}
@@ -989,11 +992,12 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
                 </div>
               ))}
             </div>
-          </>
+          </Section>
         ))}
 
       {mode === "form" && (
-        <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-4">
+        <Section>
+        <form onSubmit={handleSubmit} className="flex max-w-sm flex-col gap-5">
           <div className="flex flex-col gap-1">
             <label htmlFor="jour" className="text-sm text-muted-foreground">
               Jour
@@ -1100,6 +1104,7 @@ function ManagerPlanning({ boutiqueId }: { boutiqueId?: string }) {
             )}
           </div>
         </form>
+        </Section>
       )}
     </main>
   );

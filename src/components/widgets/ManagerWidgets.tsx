@@ -73,8 +73,8 @@ export function WidgetCaDuJour() {
         <WidgetLoading />
       ) : (
         <div>
-          <p className="text-2xl font-medium text-foreground">{formatEuros(data.ca)}</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-4xl font-semibold text-foreground">{formatEuros(data.ca)}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             {data.freq} ticket{data.freq > 1 ? "s" : ""}
             {data.caHier > 0 &&
               ` · hier : ${formatEuros(data.caHier)}`}
@@ -475,7 +475,7 @@ export function WidgetTotalFacturesMois() {
       {total === null ? (
         <WidgetLoading />
       ) : (
-        <p className="text-2xl font-medium text-foreground">{formatEuros(total)} TTC</p>
+        <p className="text-4xl font-semibold text-foreground">{formatEuros(total)} TTC</p>
       )}
     </WidgetCard>
   );

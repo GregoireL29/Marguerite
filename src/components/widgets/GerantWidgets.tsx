@@ -156,8 +156,8 @@ export function WidgetCaDuJourStructure() {
       ) : data.length === 0 ? (
         <WidgetEmpty text="Aucune boutique." />
       ) : (
-        <div className="flex flex-col gap-1">
-          <p className="text-2xl font-medium text-foreground">{formatEuros(total)}</p>
+        <div className="flex flex-col gap-2">
+          <p className="text-4xl font-semibold text-foreground">{formatEuros(total)}</p>
           <ul className="flex flex-col gap-1 text-xs text-foreground">
             {data.map((b) => (
               <li key={b.id} className="flex items-center justify-between gap-2">
@@ -291,7 +291,7 @@ export function WidgetTotalFacturesMoisStructure() {
       {total === null ? (
         <WidgetLoading />
       ) : (
-        <p className="text-2xl font-medium text-foreground">{formatEuros(total)} TTC</p>
+        <p className="text-4xl font-semibold text-foreground">{formatEuros(total)} TTC</p>
       )}
     </WidgetCard>
   );
