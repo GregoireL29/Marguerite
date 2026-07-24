@@ -150,14 +150,14 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
         <div className="flex flex-col divide-y divide-border">
           {JOURS.map(({ key, label }) => (
             <div key={key} className="flex flex-col gap-2 py-3">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-medium text-foreground">
                   {label}
                 </span>
                 <button
                   type="button"
                   onClick={() => addCreneau(key)}
-                  className="text-xs text-muted-foreground hover:underline"
+                  className="-m-2 shrink-0 p-2 text-xs text-muted-foreground hover:underline"
                 >
                   + Ajouter un créneau
                 </button>
@@ -168,14 +168,14 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
               )}
 
               {horaires[key].map((c, i) => (
-                <div key={i} className="flex items-center gap-2">
+                <div key={i} className="flex flex-wrap items-center gap-2">
                   <input
                     type="time"
                     value={c.debut}
                     onChange={(e) =>
                       updateCreneau(key, i, "debut", e.target.value)
                     }
-                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
+                    className="min-w-0 rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
                   />
                   <span className="text-sm text-faint-foreground">&ndash;</span>
                   <input
@@ -184,12 +184,12 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
                     onChange={(e) =>
                       updateCreneau(key, i, "fin", e.target.value)
                     }
-                    className="rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
+                    className="min-w-0 rounded-md border border-border px-2 py-1.5 text-sm outline-none focus:border-accent"
                   />
                   <button
                     type="button"
                     onClick={() => removeCreneau(key, i)}
-                    className="text-sm text-faint-foreground hover:text-red-600 dark:text-red-400 dark:hover:text-red-400"
+                    className="-m-2 shrink-0 p-2 text-sm text-faint-foreground hover:text-red-600 dark:text-red-400 dark:hover:text-red-400"
                     aria-label="Supprimer ce créneau"
                   >
                     &#10005;
@@ -200,7 +200,7 @@ export function BoutiqueForm({ boutiqueId, onSaved }: BoutiqueFormProps) {
           ))}
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row">
           <div className="flex flex-1 flex-col gap-1">
             <label
               htmlFor={`effectif_ouverture_${boutiqueId}`}
